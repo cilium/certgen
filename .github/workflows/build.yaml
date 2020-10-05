@@ -1,0 +1,34 @@
+name: Go build
+on:
+  pull_request: {}
+  push:
+    branches:
+      - master
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install Go
+        uses: actions/setup-go@v1
+        with:
+          go-version: 1.15.2
+      - name: Checkout code
+        uses: actions/checkout@v2
+        with:
+          path: src/github.com/cilium/certgen
+      - name: Lint
+        working-directory: src/github.com/cilium/certgen
+        run: |
+          go fmt ./...
+          go vet ./...
+          go mod tidy
+          go mod vendor
+          git diff --exit-code
+      - name: Build
+        working-directory: src/github.com/cilium/certgen
+        run: |
+          go build ./...
+      - name: Test
+        working-directory: src/github.com/cilium/certgen
+        run: |
+          go test ./...
