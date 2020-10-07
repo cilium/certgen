@@ -228,5 +228,7 @@ func generateCertificates() error {
 		}
 	}
 
+	log.Infof("Successfully generated all requested certificates.")
+
 	return nil
 }
