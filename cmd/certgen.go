@@ -29,6 +29,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
@@ -94,6 +95,30 @@ func New() *cobra.Command {
 	flags.Duration(option.HubbleServerCertValidityDuration, defaults.HubbleServerCertValidityDuration, "Hubble server certificate validity duration")
 	flags.String(option.HubbleServerCertSecretName, defaults.HubbleServerCertSecretName, "Name of the K8s Secret where the Hubble server cert and key are stored in")
 	flags.String(option.HubbleServerCertSecretNamespace, defaults.HubbleServerCertSecretNamespace, "Namespace of the K8s Secret where the Hubble server cert and key are stored in")
+
+	// Extenal Workload certs
+	flags.String(option.CiliumNamespace, defaults.CiliumNamespace, "Namespace where the cert secrets and configmaps are stored in")
+
+	flags.String(option.ExternalWorkloadCACertFile, "", "Path to provided external workload CA certificate file (required if CA is not to be generated)")
+	flags.String(option.ExternalWorkloadCAKeyFile, "", "Path to provided external workload CA key file (required if CA is not to be generated)")
+
+	flags.Bool(option.ExternalWorkloadCertsGenerate, defaults.ExternalWorkloadCertsGenerate, "Generate and store external workload certificates")
+
+	flags.String(option.ExternalWorkloadCACertCommonName, defaults.ExternalWorkloadCACertCommonName, "External workload CA certificate common name")
+	flags.Duration(option.ExternalWorkloadCACertValidityDuration, defaults.ExternalWorkloadCACertValidityDuration, "External workload CA certificate validity duration")
+	flags.String(option.ExternalWorkloadCACertSecretName, defaults.ExternalWorkloadCACertSecretName, "Name of the K8s Secret where the external workload CA cert is stored in")
+
+	flags.String(option.ExternalWorkloadServerCertCommonName, defaults.ExternalWorkloadServerCertCommonName, "ExternalWorkload server certificate common name")
+	flags.Duration(option.ExternalWorkloadServerCertValidityDuration, defaults.ExternalWorkloadServerCertValidityDuration, "ExternalWorkload server certificate validity duration")
+	flags.String(option.ExternalWorkloadServerCertSecretName, defaults.ExternalWorkloadServerCertSecretName, "Name of the K8s Secret where the ExternalWorkload server cert and key are stored in")
+
+	flags.String(option.ExternalWorkloadAdminCertCommonName, defaults.ExternalWorkloadAdminCertCommonName, "ExternalWorkload admin certificate common name")
+	flags.Duration(option.ExternalWorkloadAdminCertValidityDuration, defaults.ExternalWorkloadAdminCertValidityDuration, "ExternalWorkload admin certificate validity duration")
+	flags.String(option.ExternalWorkloadAdminCertSecretName, defaults.ExternalWorkloadAdminCertSecretName, "Name of the K8s Secret where the ExternalWorkload admin cert and key are stored in")
+
+	flags.String(option.ExternalWorkloadClientCertCommonName, defaults.ExternalWorkloadClientCertCommonName, "ExternalWorkload client certificate common name")
+	flags.Duration(option.ExternalWorkloadClientCertValidityDuration, defaults.ExternalWorkloadClientCertValidityDuration, "ExternalWorkload client certificate validity duration")
+	flags.String(option.ExternalWorkloadClientCertSecretName, defaults.ExternalWorkloadClientCertSecretName, "Name of the K8s Secret where the ExternalWorkload client cert and key are stored in")
 
 	// Sets up viper to read in flags via CILIUM_CERTGEN_ env variables
 	vp.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
@@ -225,6 +250,103 @@ func generateCertificates() error {
 		defer cancel()
 		if err := hubbleRelayServerCert.StoreAsSecret(ctx, k8sClient); err != nil {
 			return fmt.Errorf("failed to create secret for Hubble Relay server cert: %w", err)
+		}
+	}
+
+	if option.Config.ExternalWorkloadCertsGenerate {
+		haveCASecret := false
+		externalworkloadCA := generate.NewCA(option.Config.ExternalWorkloadCACertSecretName, option.Config.CiliumNamespace)
+
+		// Load CA from file?
+		if option.Config.ExternalWorkloadCACertFile != "" && option.Config.ExternalWorkloadCAKeyFile != "" {
+			log.Info("Loading ExternalWorkload CA from file")
+			err = externalworkloadCA.LoadFromFile(option.Config.ExternalWorkloadCACertFile, option.Config.ExternalWorkloadCAKeyFile)
+			if err != nil {
+				return fmt.Errorf("failed to load ExternalWorkload CA: %w", err)
+			}
+		} else {
+			// Does the secret already exist?
+			ctx, cancel := context.WithTimeout(context.Background(), option.Config.K8sRequestTimeout)
+			defer cancel()
+			err = externalworkloadCA.LoadFromSecret(ctx, k8sClient)
+			if err != nil {
+				if k8sErrors.IsNotFound(err) {
+					log.Info("ExternalWorkload CA secret does not exist, generating new CA")
+					err = externalworkloadCA.Generate(option.Config.ExternalWorkloadCACertCommonName, option.Config.ExternalWorkloadCACertValidityDuration)
+					if err != nil {
+						return fmt.Errorf("failed to generate ExternalWorkload CA: %w", err)
+					}
+				} else {
+					// Permission error or something like that
+					return fmt.Errorf("failed to load ExternalWorkload CA secret: %w", err)
+				}
+			} else {
+				log.Info("Loaded ExternalWorkload CA Secret")
+				haveCASecret = true
+			}
+		}
+
+		log.Info("Generating server certificate for ExternalWorkload")
+		externalworkloadServerCert := generate.NewCert(
+			option.Config.ExternalWorkloadServerCertCommonName,
+			option.Config.ExternalWorkloadServerCertValidityDuration,
+			defaults.ExternalWorkloadCertUsage,
+			option.Config.ExternalWorkloadServerCertSecretName,
+			option.Config.CiliumNamespace,
+		).WithHosts([]string{option.Config.ExternalWorkloadServerCertCommonName, "127.0.0.1"})
+		err = externalworkloadServerCert.Generate(externalworkloadCA.CACert, externalworkloadCA.CAKey)
+		if err != nil {
+			return fmt.Errorf("failed to generate ExternalWorkload server cert: %w", err)
+		}
+
+		log.Info("Generating admin certificate for ExternalWorkload")
+		externalworkloadAdminCert := generate.NewCert(
+			option.Config.ExternalWorkloadAdminCertCommonName,
+			option.Config.ExternalWorkloadAdminCertValidityDuration,
+			defaults.ExternalWorkloadCertUsage,
+			option.Config.ExternalWorkloadAdminCertSecretName,
+			option.Config.CiliumNamespace,
+		).WithHosts([]string{"localhost"})
+		err = externalworkloadAdminCert.Generate(externalworkloadCA.CACert, externalworkloadCA.CAKey)
+		if err != nil {
+			return fmt.Errorf("failed to generate ExternalWorkload admin cert: %w", err)
+		}
+
+		log.Info("Generating client certificate for ExternalWorkload")
+		externalworkloadClientCert := generate.NewCert(
+			option.Config.ExternalWorkloadClientCertCommonName,
+			option.Config.ExternalWorkloadClientCertValidityDuration,
+			defaults.ExternalWorkloadCertUsage,
+			option.Config.ExternalWorkloadClientCertSecretName,
+			option.Config.CiliumNamespace,
+		)
+		err = externalworkloadClientCert.Generate(externalworkloadCA.CACert, externalworkloadCA.CAKey)
+		if err != nil {
+			return fmt.Errorf("failed to generate ExternalWorkload client cert: %w", err)
+		}
+
+		// Store the generated certs
+		if !haveCASecret {
+			ctx, cancel := context.WithTimeout(context.Background(), option.Config.K8sRequestTimeout)
+			defer cancel()
+			if err := externalworkloadCA.StoreAsSecret(ctx, k8sClient); err != nil {
+				return fmt.Errorf("failed to create secret for ExternalWorkload CA: %w", err)
+			}
+		}
+		ctx, cancel := context.WithTimeout(context.Background(), option.Config.K8sRequestTimeout)
+		defer cancel()
+		if err := externalworkloadServerCert.StoreAsSecretWithCACert(ctx, k8sClient, externalworkloadCA); err != nil {
+			return fmt.Errorf("failed to create secret for ExternalWorkload server cert: %w", err)
+		}
+		ctx, cancel = context.WithTimeout(context.Background(), option.Config.K8sRequestTimeout)
+		defer cancel()
+		if err := externalworkloadAdminCert.StoreAsSecretWithCACert(ctx, k8sClient, externalworkloadCA); err != nil {
+			return fmt.Errorf("failed to create secret for ExternalWorkload admin cert: %w", err)
+		}
+		ctx, cancel = context.WithTimeout(context.Background(), option.Config.K8sRequestTimeout)
+		defer cancel()
+		if err := externalworkloadClientCert.StoreAsSecretWithCACert(ctx, k8sClient, externalworkloadCA); err != nil {
+			return fmt.Errorf("failed to create secret for ExternalWorkload client cert: %w", err)
 		}
 	}
 
