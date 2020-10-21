@@ -99,8 +99,8 @@ func New() *cobra.Command {
 	// Extenal Workload certs
 	flags.String(option.CiliumNamespace, defaults.CiliumNamespace, "Namespace where the cert secrets and configmaps are stored in")
 
-	flags.String(option.ExternalWorkloadCACertFile, "", "Path to provided external workload CA certificate file (required if CA is not to be generated)")
-	flags.String(option.ExternalWorkloadCAKeyFile, "", "Path to provided external workload CA key file (required if CA is not to be generated)")
+	flags.String(option.ExternalWorkloadCACertFile, "", "Path to provided external workload CA certificate file (required if CA does not exist and is not to be generated)")
+	flags.String(option.ExternalWorkloadCAKeyFile, "", "Path to provided external workload CA key file (required if CA does not exist and is not to be generated)")
 
 	flags.Bool(option.ExternalWorkloadCertsGenerate, defaults.ExternalWorkloadCertsGenerate, "Generate and store external workload certificates")
 
@@ -157,6 +157,7 @@ func generateCertificates() error {
 	if err != nil {
 		return fmt.Errorf("failed initialize kubernetes client: %w", err)
 	}
+	count := 0
 
 	hubbleCA := generate.NewCA(option.Config.HubbleCAConfigMapName, option.Config.HubbleCAConfigMapNamespace)
 	if option.Config.HubbleCAGenerate {
@@ -165,7 +166,7 @@ func generateCertificates() error {
 		if err != nil {
 			return fmt.Errorf("failed to generate Hubble CA: %w", err)
 		}
-	} else {
+	} else if option.Config.HubbleServerCertGenerate || option.Config.HubbleRelayClientCertGenerate || option.Config.HubbleRelayServerCertGenerate {
 		log.Info("Loading Hubble CA from file")
 		err = hubbleCA.LoadFromFile(option.Config.HubbleCACertFile, option.Config.HubbleCAKeyFile)
 		if err != nil {
@@ -227,6 +228,7 @@ func generateCertificates() error {
 		if err := hubbleCA.StoreAsConfigMap(ctx, k8sClient); err != nil {
 			return fmt.Errorf("failed to create configmap for Hubble CA: %w", err)
 		}
+		count++
 	}
 
 	if option.Config.HubbleServerCertGenerate {
@@ -235,6 +237,7 @@ func generateCertificates() error {
 		if err := hubbleServerCert.StoreAsSecret(ctx, k8sClient); err != nil {
 			return fmt.Errorf("failed to create secret for Hubble server cert: %w", err)
 		}
+		count++
 	}
 
 	if option.Config.HubbleRelayClientCertGenerate {
@@ -243,6 +246,7 @@ func generateCertificates() error {
 		if err := hubbleRelayClientCert.StoreAsSecret(ctx, k8sClient); err != nil {
 			return fmt.Errorf("failed to create secret for Hubble Relay client cert: %w", err)
 		}
+		count++
 	}
 
 	if option.Config.HubbleRelayServerCertGenerate {
@@ -251,6 +255,7 @@ func generateCertificates() error {
 		if err := hubbleRelayServerCert.StoreAsSecret(ctx, k8sClient); err != nil {
 			return fmt.Errorf("failed to create secret for Hubble Relay server cert: %w", err)
 		}
+		count++
 	}
 
 	if option.Config.ExternalWorkloadCertsGenerate {
@@ -332,25 +337,32 @@ func generateCertificates() error {
 			if err := externalworkloadCA.StoreAsSecret(ctx, k8sClient); err != nil {
 				return fmt.Errorf("failed to create secret for ExternalWorkload CA: %w", err)
 			}
+			count++
 		}
+
 		ctx, cancel := context.WithTimeout(context.Background(), option.Config.K8sRequestTimeout)
 		defer cancel()
 		if err := externalworkloadServerCert.StoreAsSecretWithCACert(ctx, k8sClient, externalworkloadCA); err != nil {
 			return fmt.Errorf("failed to create secret for ExternalWorkload server cert: %w", err)
 		}
+		count++
+
 		ctx, cancel = context.WithTimeout(context.Background(), option.Config.K8sRequestTimeout)
 		defer cancel()
 		if err := externalworkloadAdminCert.StoreAsSecretWithCACert(ctx, k8sClient, externalworkloadCA); err != nil {
 			return fmt.Errorf("failed to create secret for ExternalWorkload admin cert: %w", err)
 		}
+		count++
+
 		ctx, cancel = context.WithTimeout(context.Background(), option.Config.K8sRequestTimeout)
 		defer cancel()
 		if err := externalworkloadClientCert.StoreAsSecretWithCACert(ctx, k8sClient, externalworkloadCA); err != nil {
 			return fmt.Errorf("failed to create secret for ExternalWorkload client cert: %w", err)
 		}
+		count++
 	}
 
-	log.Infof("Successfully generated all requested certificates.")
+	log.Infof("Successfully generated all %d requested certificates.", count)
 
 	return nil
 }

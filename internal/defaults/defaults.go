@@ -19,25 +19,25 @@ import "time"
 const (
 	Debug = false
 
-	HubbleCAGenerate           = true
+	HubbleCAGenerate           = false
 	HubbleCACommonName         = "hubble-ca.cilium.io"
 	HubbleCAValidityDuration   = 3 * 365 * 24 * time.Hour
 	HubbleCAConfigMapName      = "hubble-ca-cert"
 	HubbleCAConfigMapNamespace = "kube-system"
 
-	HubbleServerCertGenerate         = true
+	HubbleServerCertGenerate         = false
 	HubbleServerCertCommonName       = "*.default.hubble-grpc.cilium.io"
 	HubbleServerCertValidityDuration = 3 * 365 * 24 * time.Hour
 	HubbleServerCertSecretName       = "hubble-server-certs"
 	HubbleServerCertSecretNamespace  = "kube-system"
 
-	HubbleRelayServerCertGenerate         = true
+	HubbleRelayServerCertGenerate         = false
 	HubbleRelayServerCertCommonName       = "*.hubble-relay.cilium.io"
 	HubbleRelayServerCertValidityDuration = 3 * 365 * 24 * time.Hour
 	HubbleRelayServerCertSecretName       = "hubble-relay-server-certs"
 	HubbleRelayServerCertSecretNamespace  = "kube-system"
 
-	HubbleRelayClientCertGenerate         = true
+	HubbleRelayClientCertGenerate         = false
 	HubbleRelayClientCertCommonName       = "*.hubble-relay.cilium.io"
 	HubbleRelayClientCertValidityDuration = 3 * 365 * 24 * time.Hour
 	HubbleRelayClientCertSecretName       = "hubble-relay-client-certs"
@@ -45,7 +45,7 @@ const (
 
 	CiliumNamespace = "kube-system"
 
-	ExternalWorkloadCertsGenerate = true
+	ExternalWorkloadCertsGenerate = false
 
 	ExternalWorkloadCACertCommonName       = "externalworkload-ca.cilium.io"
 	ExternalWorkloadCACertValidityDuration = 3 * 365 * 24 * time.Hour
