@@ -43,6 +43,26 @@ const (
 	HubbleRelayClientCertSecretName       = "hubble-relay-client-certs"
 	HubbleRelayClientCertSecretNamespace  = "kube-system"
 
+	CiliumNamespace = "kube-system"
+
+	ExternalWorkloadCertsGenerate = true
+
+	ExternalWorkloadCACertCommonName       = "externalworkload-ca.cilium.io"
+	ExternalWorkloadCACertValidityDuration = 3 * 365 * 24 * time.Hour
+	ExternalWorkloadCACertSecretName       = "externalworkload-ca-cert"
+
+	ExternalWorkloadServerCertCommonName       = "clustermesh-apiserver.cilium.io"
+	ExternalWorkloadServerCertValidityDuration = 3 * 365 * 24 * time.Hour
+	ExternalWorkloadServerCertSecretName       = "externalworkload-server-certs"
+
+	ExternalWorkloadAdminCertCommonName       = "root"
+	ExternalWorkloadAdminCertValidityDuration = 3 * 365 * 24 * time.Hour
+	ExternalWorkloadAdminCertSecretName       = "externalworkload-admin-certs"
+
+	ExternalWorkloadClientCertCommonName       = "externalworkload"
+	ExternalWorkloadClientCertValidityDuration = 3 * 365 * 24 * time.Hour
+	ExternalWorkloadClientCertSecretName       = "externalworkload-client-certs"
+
 	K8sRequestTimeout = 60 * time.Second
 )
 
@@ -50,4 +70,6 @@ var (
 	HubbleServerCertUsage      = []string{"signing", "key encipherment", "server auth"}
 	HubbleRelayServerCertUsage = []string{"signing", "key encipherment", "server auth"}
 	HubbleRelayClientCertUsage = []string{"signing", "key encipherment", "server auth", "client auth"}
+
+	ExternalWorkloadCertUsage = []string{"signing", "key encipherment", "server auth", "client auth"}
 )

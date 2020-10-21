@@ -45,11 +45,12 @@ var (
 
 // CA contains the data and metadata of the certificate and keyfile
 type Cert struct {
-	CommonName         string
-	ValidityDuration   time.Duration
-	Usage              []string
-	K8sSecretName      string
-	K8sSecretNamespace string
+	CommonName       string
+	ValidityDuration time.Duration
+	Usage            []string
+	Name             string
+	Namespace        string
+	Hosts            []string
 
 	CertBytes []byte
 	KeyBytes  []byte
@@ -60,16 +61,23 @@ func NewCert(
 	commonName string,
 	validityDuration time.Duration,
 	usage []string,
-	k8sSecretName string,
-	k8sSecretNamespace string,
+	name string,
+	namespace string,
 ) *Cert {
 	return &Cert{
-		CommonName:         commonName,
-		ValidityDuration:   validityDuration,
-		Usage:              usage,
-		K8sSecretName:      k8sSecretName,
-		K8sSecretNamespace: k8sSecretNamespace,
+		CommonName:       commonName,
+		Hosts:            []string{commonName},
+		ValidityDuration: validityDuration,
+		Usage:            usage,
+		Name:             name,
+		Namespace:        namespace,
 	}
+}
+
+// WithHosts modifies to use the given hosts instead of the default (CommonName)
+func (c *Cert) WithHosts(hosts []string) *Cert {
+	c.Hosts = hosts
+	return c
 }
 
 // Generate the certificate and keyfile and populate c.CertBytes and c.CertKey
@@ -82,7 +90,7 @@ func (c *Cert) Generate(ca *x509.Certificate, caSigner crypto.Signer) error {
 
 	certRequest := &csr.CertificateRequest{
 		CN:         c.CommonName,
-		Hosts:      []string{c.CommonName},
+		Hosts:      c.Hosts,
 		KeyRequest: csr.NewKeyRequest(),
 	}
 
@@ -118,18 +126,18 @@ func (c *Cert) Generate(ca *x509.Certificate, caSigner crypto.Signer) error {
 func (c *Cert) StoreAsSecret(ctx context.Context, k8sClient *kubernetes.Clientset) error {
 	if c.CertBytes == nil || c.KeyBytes == nil {
 		return fmt.Errorf("cannot create secret %s/%s from empty certificate",
-			c.K8sSecretNamespace, c.K8sSecretName)
+			c.Namespace, c.Name)
 	}
 
 	log.WithFields(logrus.Fields{
-		logfields.K8sSecretNamespace: c.K8sSecretNamespace,
-		logfields.K8sSecretName:      c.K8sSecretName,
+		logfields.K8sSecretNamespace: c.Namespace,
+		logfields.K8sSecretName:      c.Name,
 	}).Info("Creating K8s Secret")
 
 	secret := &v1.Secret{
 		ObjectMeta: meta_v1.ObjectMeta{
-			Name:      c.K8sSecretName,
-			Namespace: c.K8sSecretNamespace,
+			Name:      c.Name,
+			Namespace: c.Namespace,
 		},
 		Data: map[string][]byte{
 			"tls.crt": c.CertBytes,
@@ -138,7 +146,40 @@ func (c *Cert) StoreAsSecret(ctx context.Context, k8sClient *kubernetes.Clientse
 		Type: v1.SecretTypeTLS,
 	}
 
-	k8sSecrets := k8sClient.CoreV1().Secrets(c.K8sSecretNamespace)
+	k8sSecrets := k8sClient.CoreV1().Secrets(c.Namespace)
+	_, err := k8sSecrets.Create(ctx, secret, meta_v1.CreateOptions{})
+	if k8sErrors.IsAlreadyExists(err) {
+		_, err = k8sSecrets.Update(ctx, secret, meta_v1.UpdateOptions{})
+	}
+	return err
+}
+
+// StoreAsSecretWithCACert creates or updates the certificate, keyfile, and ca cert in a K8s secret
+func (c *Cert) StoreAsSecretWithCACert(ctx context.Context, k8sClient *kubernetes.Clientset, ca *CA) error {
+	if c.CertBytes == nil || c.KeyBytes == nil || ca.CACertBytes == nil {
+		return fmt.Errorf("cannot create secret %s/%s from empty certificate",
+			c.Namespace, c.Name)
+	}
+
+	log.WithFields(logrus.Fields{
+		logfields.K8sSecretNamespace: c.Namespace,
+		logfields.K8sSecretName:      c.Name,
+	}).Info("Creating K8s Secret")
+
+	secret := &v1.Secret{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name:      c.Name,
+			Namespace: c.Namespace,
+		},
+		Data: map[string][]byte{
+			"tls.crt": c.CertBytes,
+			"tls.key": c.KeyBytes,
+			"ca.crt":  ca.CACertBytes,
+		},
+		Type: v1.SecretTypeTLS,
+	}
+
+	k8sSecrets := k8sClient.CoreV1().Secrets(c.Namespace)
 	_, err := k8sSecrets.Create(ctx, secret, meta_v1.CreateOptions{})
 	if k8sErrors.IsAlreadyExists(err) {
 		_, err = k8sSecrets.Update(ctx, secret, meta_v1.UpdateOptions{})
@@ -148,8 +189,8 @@ func (c *Cert) StoreAsSecret(ctx context.Context, k8sClient *kubernetes.Clientse
 
 // CA contains the data and metadata of the certificate authority
 type CA struct {
-	K8sConfigMapName      string
-	K8sConfigMapNamespace string
+	Name      string
+	Namespace string
 
 	CACertBytes []byte
 	CAKeyBytes  []byte
@@ -159,10 +200,10 @@ type CA struct {
 }
 
 // NewCA creates a new root CA blueprint
-func NewCA(k8sConfigMapName, k8sConfigMapNamespace string) *CA {
+func NewCA(name, namespace string) *CA {
 	return &CA{
-		K8sConfigMapName:      k8sConfigMapName,
-		K8sConfigMapNamespace: k8sConfigMapNamespace,
+		Name:      name,
+		Namespace: namespace,
 	}
 }
 
@@ -232,28 +273,81 @@ func (c *CA) LoadFromFile(caCertFile, caKeyFile string) error {
 func (c *CA) StoreAsConfigMap(ctx context.Context, k8sClient *kubernetes.Clientset) error {
 	if c.CACertBytes == nil || c.CAKeyBytes == nil {
 		return fmt.Errorf("cannot create configmap %s/%s from empty certificate",
-			c.K8sConfigMapNamespace, c.K8sConfigMapName)
+			c.Namespace, c.Name)
 	}
 
 	log.WithFields(logrus.Fields{
-		logfields.K8sConfigMapNamespace: c.K8sConfigMapNamespace,
-		logfields.K8sConfigMapName:      c.K8sConfigMapName,
+		logfields.K8sConfigMapNamespace: c.Namespace,
+		logfields.K8sConfigMapName:      c.Name,
 	}).Info("Creating K8s ConfigMap")
 
 	configMap := &v1.ConfigMap{
 		ObjectMeta: meta_v1.ObjectMeta{
-			Name:      c.K8sConfigMapName,
-			Namespace: c.K8sConfigMapNamespace,
+			Name:      c.Name,
+			Namespace: c.Namespace,
 		},
 		BinaryData: map[string][]byte{
 			"ca.crt": c.CACertBytes,
 		},
 	}
 
-	k8sConfigMaps := k8sClient.CoreV1().ConfigMaps(c.K8sConfigMapNamespace)
+	k8sConfigMaps := k8sClient.CoreV1().ConfigMaps(c.Namespace)
 	_, err := k8sConfigMaps.Create(ctx, configMap, meta_v1.CreateOptions{})
 	if k8sErrors.IsAlreadyExists(err) {
 		_, err = k8sConfigMaps.Update(ctx, configMap, meta_v1.UpdateOptions{})
 	}
 	return err
+}
+
+// StoreAsSecret creates or updates the CA certificate in a K8s secret
+func (c *CA) StoreAsSecret(ctx context.Context, k8sClient *kubernetes.Clientset) error {
+	if c.CACertBytes == nil || c.CAKeyBytes == nil {
+		return fmt.Errorf("cannot create secret %s/%s from empty certificate",
+			c.Namespace, c.Name)
+	}
+
+	log.WithFields(logrus.Fields{
+		logfields.K8sSecretNamespace: c.Namespace,
+		logfields.K8sSecretName:      c.Name,
+	}).Info("Creating K8s Secret")
+
+	secret := &v1.Secret{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name:      c.Name,
+			Namespace: c.Namespace,
+		},
+		Data: map[string][]byte{
+			"ca.crt": c.CACertBytes,
+			"ca.key": c.CAKeyBytes,
+		},
+	}
+
+	k8sSecrets := k8sClient.CoreV1().Secrets(c.Namespace)
+	_, err := k8sSecrets.Create(ctx, secret, meta_v1.CreateOptions{})
+	if k8sErrors.IsAlreadyExists(err) {
+		_, err = k8sSecrets.Update(ctx, secret, meta_v1.UpdateOptions{})
+	}
+	return err
+}
+
+// LoadFromSecret populates c.CACertBytes and c.CAKeyBytes by reading them from a secret
+func (c *CA) LoadFromSecret(ctx context.Context, k8sClient *kubernetes.Clientset) error {
+	k8sSecrets := k8sClient.CoreV1().Secrets(c.Namespace)
+	secret, err := k8sSecrets.Get(ctx, c.Name, meta_v1.GetOptions{})
+	if err != nil {
+		return err
+	}
+
+	if len(secret.Data["ca.crt"]) == 0 {
+		return fmt.Errorf("Secret %s/%s has no CA cert", c.Namespace, c.Name)
+	}
+
+	if len(secret.Data["ca.key"]) == 0 {
+		return fmt.Errorf("Secret %s/%s has no CA key", c.Namespace, c.Name)
+	}
+
+	c.CACertBytes = secret.Data["ca.crt"]
+	c.CAKeyBytes = secret.Data["ca.key"]
+
+	return c.loadKeyPair()
 }
