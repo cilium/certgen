@@ -45,23 +45,23 @@ const (
 
 	CiliumNamespace = "kube-system"
 
-	ExternalWorkloadCertsGenerate = false
+	ClustermeshApiserverCertsGenerate = false
 
-	ExternalWorkloadCACertCommonName       = "externalworkload-ca.cilium.io"
-	ExternalWorkloadCACertValidityDuration = 3 * 365 * 24 * time.Hour
-	ExternalWorkloadCACertSecretName       = "externalworkload-ca-cert"
+	ClustermeshApiserverCACertCommonName       = "clustermesh-apiserver-ca.cilium.io"
+	ClustermeshApiserverCACertValidityDuration = 3 * 365 * 24 * time.Hour
+	ClustermeshApiserverCACertSecretName       = "clustermesh-apiserver-ca-cert"
 
-	ExternalWorkloadServerCertCommonName       = "clustermesh-apiserver.cilium.io"
-	ExternalWorkloadServerCertValidityDuration = 3 * 365 * 24 * time.Hour
-	ExternalWorkloadServerCertSecretName       = "externalworkload-server-certs"
+	ClustermeshApiserverServerCertCommonName       = "clustermesh-apiserver.cilium.io"
+	ClustermeshApiserverServerCertValidityDuration = 3 * 365 * 24 * time.Hour
+	ClustermeshApiserverServerCertSecretName       = "clustermesh-apiserver-server-cert"
 
-	ExternalWorkloadAdminCertCommonName       = "root"
-	ExternalWorkloadAdminCertValidityDuration = 3 * 365 * 24 * time.Hour
-	ExternalWorkloadAdminCertSecretName       = "externalworkload-admin-certs"
+	ClustermeshApiserverAdminCertCommonName       = "root"
+	ClustermeshApiserverAdminCertValidityDuration = 3 * 365 * 24 * time.Hour
+	ClustermeshApiserverAdminCertSecretName       = "clustermesh-apiserver-admin-cert"
 
-	ExternalWorkloadClientCertCommonName       = "externalworkload"
-	ExternalWorkloadClientCertValidityDuration = 3 * 365 * 24 * time.Hour
-	ExternalWorkloadClientCertSecretName       = "externalworkload-client-certs"
+	ClustermeshApiserverClientCertCommonName       = "externalworkload"
+	ClustermeshApiserverClientCertValidityDuration = 3 * 365 * 24 * time.Hour
+	ClustermeshApiserverClientCertSecretName       = "clustermesh-apiserver-client-cert"
 
 	K8sRequestTimeout = 60 * time.Second
 )
@@ -71,5 +71,5 @@ var (
 	HubbleRelayServerCertUsage = []string{"signing", "key encipherment", "server auth"}
 	HubbleRelayClientCertUsage = []string{"signing", "key encipherment", "server auth", "client auth"}
 
-	ExternalWorkloadCertUsage = []string{"signing", "key encipherment", "server auth", "client auth"}
+	ClustermeshApiserverCertUsage = []string{"signing", "key encipherment", "server auth", "client auth"}
 )

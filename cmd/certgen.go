@@ -99,26 +99,26 @@ func New() *cobra.Command {
 	// Extenal Workload certs
 	flags.String(option.CiliumNamespace, defaults.CiliumNamespace, "Namespace where the cert secrets and configmaps are stored in")
 
-	flags.String(option.ExternalWorkloadCACertFile, "", "Path to provided external workload CA certificate file (required if CA does not exist and is not to be generated)")
-	flags.String(option.ExternalWorkloadCAKeyFile, "", "Path to provided external workload CA key file (required if CA does not exist and is not to be generated)")
+	flags.String(option.ClustermeshApiserverCACertFile, "", "Path to provided clustermesh-apiserver CA certificate file (required if CA does not exist and is not to be generated)")
+	flags.String(option.ClustermeshApiserverCAKeyFile, "", "Path to provided clustermesh-apiserver CA key file (required if CA does not exist and is not to be generated)")
 
-	flags.Bool(option.ExternalWorkloadCertsGenerate, defaults.ExternalWorkloadCertsGenerate, "Generate and store external workload certificates")
+	flags.Bool(option.ClustermeshApiserverCertsGenerate, defaults.ClustermeshApiserverCertsGenerate, "Generate and store clustermesh-apiserver certificates")
 
-	flags.String(option.ExternalWorkloadCACertCommonName, defaults.ExternalWorkloadCACertCommonName, "External workload CA certificate common name")
-	flags.Duration(option.ExternalWorkloadCACertValidityDuration, defaults.ExternalWorkloadCACertValidityDuration, "External workload CA certificate validity duration")
-	flags.String(option.ExternalWorkloadCACertSecretName, defaults.ExternalWorkloadCACertSecretName, "Name of the K8s Secret where the external workload CA cert is stored in")
+	flags.String(option.ClustermeshApiserverCACertCommonName, defaults.ClustermeshApiserverCACertCommonName, "clustermesh-apiserver CA certificate common name")
+	flags.Duration(option.ClustermeshApiserverCACertValidityDuration, defaults.ClustermeshApiserverCACertValidityDuration, "clustermesh-apiserver CA certificate validity duration")
+	flags.String(option.ClustermeshApiserverCACertSecretName, defaults.ClustermeshApiserverCACertSecretName, "Name of the K8s Secret where the clustermesh-apiserver CA cert is stored in")
 
-	flags.String(option.ExternalWorkloadServerCertCommonName, defaults.ExternalWorkloadServerCertCommonName, "ExternalWorkload server certificate common name")
-	flags.Duration(option.ExternalWorkloadServerCertValidityDuration, defaults.ExternalWorkloadServerCertValidityDuration, "ExternalWorkload server certificate validity duration")
-	flags.String(option.ExternalWorkloadServerCertSecretName, defaults.ExternalWorkloadServerCertSecretName, "Name of the K8s Secret where the ExternalWorkload server cert and key are stored in")
+	flags.String(option.ClustermeshApiserverServerCertCommonName, defaults.ClustermeshApiserverServerCertCommonName, "clustermesh-apiserver server certificate common name")
+	flags.Duration(option.ClustermeshApiserverServerCertValidityDuration, defaults.ClustermeshApiserverServerCertValidityDuration, "clustermesh-apiserver server certificate validity duration")
+	flags.String(option.ClustermeshApiserverServerCertSecretName, defaults.ClustermeshApiserverServerCertSecretName, "Name of the K8s Secret where the clustermesh-apiserver server cert and key are stored in")
 
-	flags.String(option.ExternalWorkloadAdminCertCommonName, defaults.ExternalWorkloadAdminCertCommonName, "ExternalWorkload admin certificate common name")
-	flags.Duration(option.ExternalWorkloadAdminCertValidityDuration, defaults.ExternalWorkloadAdminCertValidityDuration, "ExternalWorkload admin certificate validity duration")
-	flags.String(option.ExternalWorkloadAdminCertSecretName, defaults.ExternalWorkloadAdminCertSecretName, "Name of the K8s Secret where the ExternalWorkload admin cert and key are stored in")
+	flags.String(option.ClustermeshApiserverAdminCertCommonName, defaults.ClustermeshApiserverAdminCertCommonName, "clustermesh-apiserver admin certificate common name")
+	flags.Duration(option.ClustermeshApiserverAdminCertValidityDuration, defaults.ClustermeshApiserverAdminCertValidityDuration, "clustermesh-apiserver admin certificate validity duration")
+	flags.String(option.ClustermeshApiserverAdminCertSecretName, defaults.ClustermeshApiserverAdminCertSecretName, "Name of the K8s Secret where the clustermesh-apiserver admin cert and key are stored in")
 
-	flags.String(option.ExternalWorkloadClientCertCommonName, defaults.ExternalWorkloadClientCertCommonName, "ExternalWorkload client certificate common name")
-	flags.Duration(option.ExternalWorkloadClientCertValidityDuration, defaults.ExternalWorkloadClientCertValidityDuration, "ExternalWorkload client certificate validity duration")
-	flags.String(option.ExternalWorkloadClientCertSecretName, defaults.ExternalWorkloadClientCertSecretName, "Name of the K8s Secret where the ExternalWorkload client cert and key are stored in")
+	flags.String(option.ClustermeshApiserverClientCertCommonName, defaults.ClustermeshApiserverClientCertCommonName, "clustermesh-apiserver client certificate common name")
+	flags.Duration(option.ClustermeshApiserverClientCertValidityDuration, defaults.ClustermeshApiserverClientCertValidityDuration, "clustermesh-apiserver client certificate validity duration")
+	flags.String(option.ClustermeshApiserverClientCertSecretName, defaults.ClustermeshApiserverClientCertSecretName, "Name of the K8s Secret where the clustermesh-apiserver client cert and key are stored in")
 
 	// Sets up viper to read in flags via CILIUM_CERTGEN_ env variables
 	vp.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
@@ -258,106 +258,106 @@ func generateCertificates() error {
 		count++
 	}
 
-	if option.Config.ExternalWorkloadCertsGenerate {
+	if option.Config.ClustermeshApiserverCertsGenerate {
 		haveCASecret := false
-		externalworkloadCA := generate.NewCA(option.Config.ExternalWorkloadCACertSecretName, option.Config.CiliumNamespace)
+		clustermeshApiserverCA := generate.NewCA(option.Config.ClustermeshApiserverCACertSecretName, option.Config.CiliumNamespace)
 
 		// Load CA from file?
-		if option.Config.ExternalWorkloadCACertFile != "" && option.Config.ExternalWorkloadCAKeyFile != "" {
-			log.Info("Loading ExternalWorkload CA from file")
-			err = externalworkloadCA.LoadFromFile(option.Config.ExternalWorkloadCACertFile, option.Config.ExternalWorkloadCAKeyFile)
+		if option.Config.ClustermeshApiserverCACertFile != "" && option.Config.ClustermeshApiserverCAKeyFile != "" {
+			log.Info("Loading ClustermeshApiserver CA from file")
+			err = clustermeshApiserverCA.LoadFromFile(option.Config.ClustermeshApiserverCACertFile, option.Config.ClustermeshApiserverCAKeyFile)
 			if err != nil {
-				return fmt.Errorf("failed to load ExternalWorkload CA: %w", err)
+				return fmt.Errorf("failed to load ClustermeshApiserver CA: %w", err)
 			}
 		} else {
 			// Does the secret already exist?
 			ctx, cancel := context.WithTimeout(context.Background(), option.Config.K8sRequestTimeout)
 			defer cancel()
-			err = externalworkloadCA.LoadFromSecret(ctx, k8sClient)
+			err = clustermeshApiserverCA.LoadFromSecret(ctx, k8sClient)
 			if err != nil {
 				if k8sErrors.IsNotFound(err) {
-					log.Info("ExternalWorkload CA secret does not exist, generating new CA")
-					err = externalworkloadCA.Generate(option.Config.ExternalWorkloadCACertCommonName, option.Config.ExternalWorkloadCACertValidityDuration)
+					log.Info("ClustermeshApiserver CA secret does not exist, generating new CA")
+					err = clustermeshApiserverCA.Generate(option.Config.ClustermeshApiserverCACertCommonName, option.Config.ClustermeshApiserverCACertValidityDuration)
 					if err != nil {
-						return fmt.Errorf("failed to generate ExternalWorkload CA: %w", err)
+						return fmt.Errorf("failed to generate ClustermeshApiserver CA: %w", err)
 					}
 				} else {
 					// Permission error or something like that
-					return fmt.Errorf("failed to load ExternalWorkload CA secret: %w", err)
+					return fmt.Errorf("failed to load ClustermeshApiserver CA secret: %w", err)
 				}
 			} else {
-				log.Info("Loaded ExternalWorkload CA Secret")
+				log.Info("Loaded ClustermeshApiserver CA Secret")
 				haveCASecret = true
 			}
 		}
 
-		log.Info("Generating server certificate for ExternalWorkload")
-		externalworkloadServerCert := generate.NewCert(
-			option.Config.ExternalWorkloadServerCertCommonName,
-			option.Config.ExternalWorkloadServerCertValidityDuration,
-			defaults.ExternalWorkloadCertUsage,
-			option.Config.ExternalWorkloadServerCertSecretName,
+		log.Info("Generating server certificate for ClustermeshApiserver")
+		clustermeshApiserverServerCert := generate.NewCert(
+			option.Config.ClustermeshApiserverServerCertCommonName,
+			option.Config.ClustermeshApiserverServerCertValidityDuration,
+			defaults.ClustermeshApiserverCertUsage,
+			option.Config.ClustermeshApiserverServerCertSecretName,
 			option.Config.CiliumNamespace,
-		).WithHosts([]string{option.Config.ExternalWorkloadServerCertCommonName, "127.0.0.1"})
-		err = externalworkloadServerCert.Generate(externalworkloadCA.CACert, externalworkloadCA.CAKey)
+		).WithHosts([]string{option.Config.ClustermeshApiserverServerCertCommonName, "127.0.0.1"})
+		err = clustermeshApiserverServerCert.Generate(clustermeshApiserverCA.CACert, clustermeshApiserverCA.CAKey)
 		if err != nil {
-			return fmt.Errorf("failed to generate ExternalWorkload server cert: %w", err)
+			return fmt.Errorf("failed to generate ClustermeshApiserver server cert: %w", err)
 		}
 
-		log.Info("Generating admin certificate for ExternalWorkload")
-		externalworkloadAdminCert := generate.NewCert(
-			option.Config.ExternalWorkloadAdminCertCommonName,
-			option.Config.ExternalWorkloadAdminCertValidityDuration,
-			defaults.ExternalWorkloadCertUsage,
-			option.Config.ExternalWorkloadAdminCertSecretName,
+		log.Info("Generating admin certificate for ClustermeshApiserver")
+		clustermeshApiserverAdminCert := generate.NewCert(
+			option.Config.ClustermeshApiserverAdminCertCommonName,
+			option.Config.ClustermeshApiserverAdminCertValidityDuration,
+			defaults.ClustermeshApiserverCertUsage,
+			option.Config.ClustermeshApiserverAdminCertSecretName,
 			option.Config.CiliumNamespace,
 		).WithHosts([]string{"localhost"})
-		err = externalworkloadAdminCert.Generate(externalworkloadCA.CACert, externalworkloadCA.CAKey)
+		err = clustermeshApiserverAdminCert.Generate(clustermeshApiserverCA.CACert, clustermeshApiserverCA.CAKey)
 		if err != nil {
-			return fmt.Errorf("failed to generate ExternalWorkload admin cert: %w", err)
+			return fmt.Errorf("failed to generate ClustermeshApiserver admin cert: %w", err)
 		}
 
-		log.Info("Generating client certificate for ExternalWorkload")
-		externalworkloadClientCert := generate.NewCert(
-			option.Config.ExternalWorkloadClientCertCommonName,
-			option.Config.ExternalWorkloadClientCertValidityDuration,
-			defaults.ExternalWorkloadCertUsage,
-			option.Config.ExternalWorkloadClientCertSecretName,
+		log.Info("Generating client certificate for ClustermeshApiserver")
+		clustermeshApiserverClientCert := generate.NewCert(
+			option.Config.ClustermeshApiserverClientCertCommonName,
+			option.Config.ClustermeshApiserverClientCertValidityDuration,
+			defaults.ClustermeshApiserverCertUsage,
+			option.Config.ClustermeshApiserverClientCertSecretName,
 			option.Config.CiliumNamespace,
 		)
-		err = externalworkloadClientCert.Generate(externalworkloadCA.CACert, externalworkloadCA.CAKey)
+		err = clustermeshApiserverClientCert.Generate(clustermeshApiserverCA.CACert, clustermeshApiserverCA.CAKey)
 		if err != nil {
-			return fmt.Errorf("failed to generate ExternalWorkload client cert: %w", err)
+			return fmt.Errorf("failed to generate ClustermeshApiserver client cert: %w", err)
 		}
 
 		// Store the generated certs
 		if !haveCASecret {
 			ctx, cancel := context.WithTimeout(context.Background(), option.Config.K8sRequestTimeout)
 			defer cancel()
-			if err := externalworkloadCA.StoreAsSecret(ctx, k8sClient); err != nil {
-				return fmt.Errorf("failed to create secret for ExternalWorkload CA: %w", err)
+			if err := clustermeshApiserverCA.StoreAsSecret(ctx, k8sClient); err != nil {
+				return fmt.Errorf("failed to create secret for ClustermeshApiserver CA: %w", err)
 			}
 			count++
 		}
 
 		ctx, cancel := context.WithTimeout(context.Background(), option.Config.K8sRequestTimeout)
 		defer cancel()
-		if err := externalworkloadServerCert.StoreAsSecretWithCACert(ctx, k8sClient, externalworkloadCA); err != nil {
-			return fmt.Errorf("failed to create secret for ExternalWorkload server cert: %w", err)
+		if err := clustermeshApiserverServerCert.StoreAsSecretWithCACert(ctx, k8sClient, clustermeshApiserverCA); err != nil {
+			return fmt.Errorf("failed to create secret for ClustermeshApiserver server cert: %w", err)
 		}
 		count++
 
 		ctx, cancel = context.WithTimeout(context.Background(), option.Config.K8sRequestTimeout)
 		defer cancel()
-		if err := externalworkloadAdminCert.StoreAsSecretWithCACert(ctx, k8sClient, externalworkloadCA); err != nil {
-			return fmt.Errorf("failed to create secret for ExternalWorkload admin cert: %w", err)
+		if err := clustermeshApiserverAdminCert.StoreAsSecretWithCACert(ctx, k8sClient, clustermeshApiserverCA); err != nil {
+			return fmt.Errorf("failed to create secret for ClustermeshApiserver admin cert: %w", err)
 		}
 		count++
 
 		ctx, cancel = context.WithTimeout(context.Background(), option.Config.K8sRequestTimeout)
 		defer cancel()
-		if err := externalworkloadClientCert.StoreAsSecretWithCACert(ctx, k8sClient, externalworkloadCA); err != nil {
-			return fmt.Errorf("failed to create secret for ExternalWorkload client cert: %w", err)
+		if err := clustermeshApiserverClientCert.StoreAsSecretWithCACert(ctx, k8sClient, clustermeshApiserverCA); err != nil {
+			return fmt.Errorf("failed to create secret for ClustermeshApiserver client cert: %w", err)
 		}
 		count++
 	}
