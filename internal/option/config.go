@@ -56,26 +56,26 @@ const (
 
 	CiliumNamespace = "cilium-namespace"
 
-	ExternalWorkloadCACertFile = "externalworkload-ca-cert-file"
-	ExternalWorkloadCAKeyFile  = "externalworkload-ca-key-file"
+	ClustermeshApiserverCACertFile = "clustermesh-apiserver-ca-cert-file"
+	ClustermeshApiserverCAKeyFile  = "clustermesh-apiserver-ca-key-file"
 
-	ExternalWorkloadCertsGenerate = "externalworkload-certs-generate"
+	ClustermeshApiserverCertsGenerate = "clustermesh-apiserver-certs-generate"
 
-	ExternalWorkloadCACertCommonName       = "externalworkload-ca-cert-common-name"
-	ExternalWorkloadCACertValidityDuration = "externalworkload-ca-cert-validity-duration"
-	ExternalWorkloadCACertSecretName       = "externalworkload-ca-cert-secret-name"
+	ClustermeshApiserverCACertCommonName       = "clustermesh-apiserver-ca-cert-common-name"
+	ClustermeshApiserverCACertValidityDuration = "clustermesh-apiserver-ca-cert-validity-duration"
+	ClustermeshApiserverCACertSecretName       = "clustermesh-apiserver-ca-cert-secret-name"
 
-	ExternalWorkloadServerCertCommonName       = "externalworkload-server-cert-common-name"
-	ExternalWorkloadServerCertValidityDuration = "externalworkload-server-cert-validity-duration"
-	ExternalWorkloadServerCertSecretName       = "externalworkload-server-cert-secret-name"
+	ClustermeshApiserverServerCertCommonName       = "clustermesh-apiserver-server-cert-common-name"
+	ClustermeshApiserverServerCertValidityDuration = "clustermesh-apiserver-server-cert-validity-duration"
+	ClustermeshApiserverServerCertSecretName       = "clustermesh-apiserver-server-cert-secret-name"
 
-	ExternalWorkloadAdminCertCommonName       = "externalworkload-admin-cert-common-name"
-	ExternalWorkloadAdminCertValidityDuration = "externalworkload-admin-cert-validity-duration"
-	ExternalWorkloadAdminCertSecretName       = "externalworkload-admin-cert-secret-name"
+	ClustermeshApiserverAdminCertCommonName       = "clustermesh-apiserver-admin-cert-common-name"
+	ClustermeshApiserverAdminCertValidityDuration = "clustermesh-apiserver-admin-cert-validity-duration"
+	ClustermeshApiserverAdminCertSecretName       = "clustermesh-apiserver-admin-cert-secret-name"
 
-	ExternalWorkloadClientCertCommonName       = "externalworkload-client-cert-common-name"
-	ExternalWorkloadClientCertValidityDuration = "externalworkload-client-cert-validity-duration"
-	ExternalWorkloadClientCertSecretName       = "externalworkload-client-cert-secret-name"
+	ClustermeshApiserverClientCertCommonName       = "clustermesh-apiserver-client-cert-common-name"
+	ClustermeshApiserverClientCertValidityDuration = "clustermesh-apiserver-client-cert-validity-duration"
+	ClustermeshApiserverClientCertSecretName       = "clustermesh-apiserver-client-cert-secret-name"
 
 	K8sKubeConfigPath = "k8s-kubeconfig-path"
 	K8sRequestTimeout = "k8s-request-timeout"
@@ -145,44 +145,44 @@ type CertGenConfig struct {
 	// CiliumNamespace where the secrets and configmaps will be stored
 	CiliumNamespace string
 
-	// ExternalWorkloadCACertFile is the path to the ExternalWorkload CA cert PEM (if ExternalWorkloadCertsGenerate is false)
-	ExternalWorkloadCACertFile string
-	// ExternalWorkloadCAKeyFile is the path to the ExternalWorkload CA key PEM (if ExternalWorkloadCertsGenerate is false)
-	ExternalWorkloadCAKeyFile string
+	// ClustermeshApiserverCACertFile is the path to the ClustermeshApiserver CA cert PEM (if ClustermeshApiserverCertsGenerate is false)
+	ClustermeshApiserverCACertFile string
+	// ClustermeshApiserverCAKeyFile is the path to the ClustermeshApiserver CA key PEM (if ClustermeshApiserverCertsGenerate is false)
+	ClustermeshApiserverCAKeyFile string
 
-	// ExternalWorkloadCertsGenerate can be set to true to generate and store a new ExternalWorkload secrets and configmap
+	// ClustermeshApiserverCertsGenerate can be set to true to generate and store a new ClustermeshApiserver secrets and configmap
 	// New CA ConfigMap is created if created if existing one is not found. Delete the old ConfigMap to force regeneration.
 	// New CA is created if CA cert and key are not given.
 	// Server and client certs are created on each invocation.
-	ExternalWorkloadCertsGenerate bool
+	ClustermeshApiserverCertsGenerate bool
 
-	// ExternalWorkloadCACertCommonName is the CN of the ExternalWorkload CA
-	ExternalWorkloadCACertCommonName string
-	// ExternalWorkloadCACertValidityDuration of certificate
-	ExternalWorkloadCACertValidityDuration time.Duration
-	// ExternalWorkloadCACertSecretName where the ExternalWorkload CA cert will be stored
-	ExternalWorkloadCACertSecretName string
+	// ClustermeshApiserverCACertCommonName is the CN of the ClustermeshApiserver CA
+	ClustermeshApiserverCACertCommonName string
+	// ClustermeshApiserverCACertValidityDuration of certificate
+	ClustermeshApiserverCACertValidityDuration time.Duration
+	// ClustermeshApiserverCACertSecretName where the ClustermeshApiserver CA cert will be stored
+	ClustermeshApiserverCACertSecretName string
 
-	// ExternalWorkloadServerCertCommonName is the CN of the ExternalWorkload server cert
-	ExternalWorkloadServerCertCommonName string
-	// ExternalWorkloadServerCertValidityDuration of certificate
-	ExternalWorkloadServerCertValidityDuration time.Duration
-	// ExternalWorkloadServerCertSecretName where the ExternalWorkload server cert and key will be stored
-	ExternalWorkloadServerCertSecretName string
+	// ClustermeshApiserverServerCertCommonName is the CN of the ClustermeshApiserver server cert
+	ClustermeshApiserverServerCertCommonName string
+	// ClustermeshApiserverServerCertValidityDuration of certificate
+	ClustermeshApiserverServerCertValidityDuration time.Duration
+	// ClustermeshApiserverServerCertSecretName where the ClustermeshApiserver server cert and key will be stored
+	ClustermeshApiserverServerCertSecretName string
 
-	// ExternalWorkloadAdminCertCommonName is the CN of the ExternalWorkload admin cert
-	ExternalWorkloadAdminCertCommonName string
-	// ExternalWorkloadAdminCertValidityDuration of certificate
-	ExternalWorkloadAdminCertValidityDuration time.Duration
-	// ExternalWorkloadAdminCertSecretName where the ExternalWorkload admin cert and key will be stored
-	ExternalWorkloadAdminCertSecretName string
+	// ClustermeshApiserverAdminCertCommonName is the CN of the ClustermeshApiserver admin cert
+	ClustermeshApiserverAdminCertCommonName string
+	// ClustermeshApiserverAdminCertValidityDuration of certificate
+	ClustermeshApiserverAdminCertValidityDuration time.Duration
+	// ClustermeshApiserverAdminCertSecretName where the ClustermeshApiserver admin cert and key will be stored
+	ClustermeshApiserverAdminCertSecretName string
 
-	// ExternalWorkloadClientCertCommonName is the CN of the ExternalWorkload client cert
-	ExternalWorkloadClientCertCommonName string
-	// ExternalWorkloadClientCertValidityDuration of certificate
-	ExternalWorkloadClientCertValidityDuration time.Duration
-	// ExternalWorkloadClientCertSecretName where the ExternalWorkload client cert and key will be stored
-	ExternalWorkloadClientCertSecretName string
+	// ClustermeshApiserverClientCertCommonName is the CN of the ClustermeshApiserver client cert
+	ClustermeshApiserverClientCertCommonName string
+	// ClustermeshApiserverClientCertValidityDuration of certificate
+	ClustermeshApiserverClientCertValidityDuration time.Duration
+	// ClustermeshApiserverClientCertSecretName where the ClustermeshApiserver client cert and key will be stored
+	ClustermeshApiserverClientCertSecretName string
 }
 
 // PopulateFrom populates the config struct with the values provided by vp
@@ -220,24 +220,24 @@ func (c *CertGenConfig) PopulateFrom(vp *viper.Viper) {
 
 	c.CiliumNamespace = vp.GetString(CiliumNamespace)
 
-	c.ExternalWorkloadCACertFile = vp.GetString(ExternalWorkloadCACertFile)
-	c.ExternalWorkloadCAKeyFile = vp.GetString(ExternalWorkloadCAKeyFile)
+	c.ClustermeshApiserverCACertFile = vp.GetString(ClustermeshApiserverCACertFile)
+	c.ClustermeshApiserverCAKeyFile = vp.GetString(ClustermeshApiserverCAKeyFile)
 
-	c.ExternalWorkloadCertsGenerate = vp.GetBool(ExternalWorkloadCertsGenerate)
+	c.ClustermeshApiserverCertsGenerate = vp.GetBool(ClustermeshApiserverCertsGenerate)
 
-	c.ExternalWorkloadCACertCommonName = vp.GetString(ExternalWorkloadCACertCommonName)
-	c.ExternalWorkloadCACertValidityDuration = vp.GetDuration(ExternalWorkloadCACertValidityDuration)
-	c.ExternalWorkloadCACertSecretName = vp.GetString(ExternalWorkloadCACertSecretName)
+	c.ClustermeshApiserverCACertCommonName = vp.GetString(ClustermeshApiserverCACertCommonName)
+	c.ClustermeshApiserverCACertValidityDuration = vp.GetDuration(ClustermeshApiserverCACertValidityDuration)
+	c.ClustermeshApiserverCACertSecretName = vp.GetString(ClustermeshApiserverCACertSecretName)
 
-	c.ExternalWorkloadServerCertCommonName = vp.GetString(ExternalWorkloadServerCertCommonName)
-	c.ExternalWorkloadServerCertValidityDuration = vp.GetDuration(ExternalWorkloadServerCertValidityDuration)
-	c.ExternalWorkloadServerCertSecretName = vp.GetString(ExternalWorkloadServerCertSecretName)
+	c.ClustermeshApiserverServerCertCommonName = vp.GetString(ClustermeshApiserverServerCertCommonName)
+	c.ClustermeshApiserverServerCertValidityDuration = vp.GetDuration(ClustermeshApiserverServerCertValidityDuration)
+	c.ClustermeshApiserverServerCertSecretName = vp.GetString(ClustermeshApiserverServerCertSecretName)
 
-	c.ExternalWorkloadAdminCertCommonName = vp.GetString(ExternalWorkloadAdminCertCommonName)
-	c.ExternalWorkloadAdminCertValidityDuration = vp.GetDuration(ExternalWorkloadAdminCertValidityDuration)
-	c.ExternalWorkloadAdminCertSecretName = vp.GetString(ExternalWorkloadAdminCertSecretName)
+	c.ClustermeshApiserverAdminCertCommonName = vp.GetString(ClustermeshApiserverAdminCertCommonName)
+	c.ClustermeshApiserverAdminCertValidityDuration = vp.GetDuration(ClustermeshApiserverAdminCertValidityDuration)
+	c.ClustermeshApiserverAdminCertSecretName = vp.GetString(ClustermeshApiserverAdminCertSecretName)
 
-	c.ExternalWorkloadClientCertCommonName = vp.GetString(ExternalWorkloadClientCertCommonName)
-	c.ExternalWorkloadClientCertValidityDuration = vp.GetDuration(ExternalWorkloadClientCertValidityDuration)
-	c.ExternalWorkloadClientCertSecretName = vp.GetString(ExternalWorkloadClientCertSecretName)
+	c.ClustermeshApiserverClientCertCommonName = vp.GetString(ClustermeshApiserverClientCertCommonName)
+	c.ClustermeshApiserverClientCertValidityDuration = vp.GetDuration(ClustermeshApiserverClientCertValidityDuration)
+	c.ClustermeshApiserverClientCertSecretName = vp.GetString(ClustermeshApiserverClientCertSecretName)
 }
