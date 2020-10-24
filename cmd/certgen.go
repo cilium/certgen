@@ -342,21 +342,21 @@ func generateCertificates() error {
 
 		ctx, cancel := context.WithTimeout(context.Background(), option.Config.K8sRequestTimeout)
 		defer cancel()
-		if err := clustermeshApiserverServerCert.StoreAsSecretWithCACert(ctx, k8sClient, clustermeshApiserverCA); err != nil {
+		if err := clustermeshApiserverServerCert.StoreAsSecret(ctx, k8sClient); err != nil {
 			return fmt.Errorf("failed to create secret for ClustermeshApiserver server cert: %w", err)
 		}
 		count++
 
 		ctx, cancel = context.WithTimeout(context.Background(), option.Config.K8sRequestTimeout)
 		defer cancel()
-		if err := clustermeshApiserverAdminCert.StoreAsSecretWithCACert(ctx, k8sClient, clustermeshApiserverCA); err != nil {
+		if err := clustermeshApiserverAdminCert.StoreAsSecret(ctx, k8sClient); err != nil {
 			return fmt.Errorf("failed to create secret for ClustermeshApiserver admin cert: %w", err)
 		}
 		count++
 
 		ctx, cancel = context.WithTimeout(context.Background(), option.Config.K8sRequestTimeout)
 		defer cancel()
-		if err := clustermeshApiserverClientCert.StoreAsSecretWithCACert(ctx, k8sClient, clustermeshApiserverCA); err != nil {
+		if err := clustermeshApiserverClientCert.StoreAsSecret(ctx, k8sClient); err != nil {
 			return fmt.Errorf("failed to create secret for ClustermeshApiserver client cert: %w", err)
 		}
 		count++
