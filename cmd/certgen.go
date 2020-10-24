@@ -120,6 +120,10 @@ func New() *cobra.Command {
 	flags.Duration(option.ClustermeshApiserverClientCertValidityDuration, defaults.ClustermeshApiserverClientCertValidityDuration, "clustermesh-apiserver client certificate validity duration")
 	flags.String(option.ClustermeshApiserverClientCertSecretName, defaults.ClustermeshApiserverClientCertSecretName, "Name of the K8s Secret where the clustermesh-apiserver client cert and key are stored in")
 
+	flags.String(option.ClustermeshApiserverRemoteCertCommonName, defaults.ClustermeshApiserverRemoteCertCommonName, "clustermesh-apiserver remote certificate common name")
+	flags.Duration(option.ClustermeshApiserverRemoteCertValidityDuration, defaults.ClustermeshApiserverRemoteCertValidityDuration, "clustermesh-apiserver remote certificate validity duration")
+	flags.String(option.ClustermeshApiserverRemoteCertSecretName, defaults.ClustermeshApiserverRemoteCertSecretName, "Name of the K8s Secret where the clustermesh-apiserver remote cert and key are stored in")
+
 	// Sets up viper to read in flags via CILIUM_CERTGEN_ env variables
 	vp.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
 	vp.SetEnvPrefix(binaryName)
@@ -330,6 +334,19 @@ func generateCertificates() error {
 			return fmt.Errorf("failed to generate ClustermeshApiserver client cert: %w", err)
 		}
 
+		log.Info("Generating remote certificate for ClustermeshApiserver")
+		clustermeshApiserverRemoteCert := generate.NewCert(
+			option.Config.ClustermeshApiserverRemoteCertCommonName,
+			option.Config.ClustermeshApiserverRemoteCertValidityDuration,
+			defaults.ClustermeshApiserverCertUsage,
+			option.Config.ClustermeshApiserverRemoteCertSecretName,
+			option.Config.CiliumNamespace,
+		)
+		err = clustermeshApiserverRemoteCert.Generate(clustermeshApiserverCA.CACert, clustermeshApiserverCA.CAKey)
+		if err != nil {
+			return fmt.Errorf("failed to generate ClustermeshApiserver remote cert: %w", err)
+		}
+
 		// Store the generated certs
 		if !haveCASecret {
 			ctx, cancel := context.WithTimeout(context.Background(), option.Config.K8sRequestTimeout)
@@ -358,6 +375,13 @@ func generateCertificates() error {
 		defer cancel()
 		if err := clustermeshApiserverClientCert.StoreAsSecret(ctx, k8sClient); err != nil {
 			return fmt.Errorf("failed to create secret for ClustermeshApiserver client cert: %w", err)
+		}
+		count++
+
+		ctx, cancel = context.WithTimeout(context.Background(), option.Config.K8sRequestTimeout)
+		defer cancel()
+		if err := clustermeshApiserverRemoteCert.StoreAsSecret(ctx, k8sClient); err != nil {
+			return fmt.Errorf("failed to create secret for ClustermeshApiserver remote cert: %w", err)
 		}
 		count++
 	}

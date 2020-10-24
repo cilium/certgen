@@ -63,6 +63,10 @@ const (
 	ClustermeshApiserverClientCertValidityDuration = 3 * 365 * 24 * time.Hour
 	ClustermeshApiserverClientCertSecretName       = "clustermesh-apiserver-client-cert"
 
+	ClustermeshApiserverRemoteCertCommonName       = "remote"
+	ClustermeshApiserverRemoteCertValidityDuration = 3 * 365 * 24 * time.Hour
+	ClustermeshApiserverRemoteCertSecretName       = "clustermesh-apiserver-remote-cert"
+
 	K8sRequestTimeout = 60 * time.Second
 )
 
