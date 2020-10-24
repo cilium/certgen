@@ -77,6 +77,10 @@ const (
 	ClustermeshApiserverClientCertValidityDuration = "clustermesh-apiserver-client-cert-validity-duration"
 	ClustermeshApiserverClientCertSecretName       = "clustermesh-apiserver-client-cert-secret-name"
 
+	ClustermeshApiserverRemoteCertCommonName       = "clustermesh-apiserver-remote-cert-common-name"
+	ClustermeshApiserverRemoteCertValidityDuration = "clustermesh-apiserver-remote-cert-validity-duration"
+	ClustermeshApiserverRemoteCertSecretName       = "clustermesh-apiserver-remote-cert-secret-name"
+
 	K8sKubeConfigPath = "k8s-kubeconfig-path"
 	K8sRequestTimeout = "k8s-request-timeout"
 )
@@ -183,6 +187,13 @@ type CertGenConfig struct {
 	ClustermeshApiserverClientCertValidityDuration time.Duration
 	// ClustermeshApiserverClientCertSecretName where the ClustermeshApiserver client cert and key will be stored
 	ClustermeshApiserverClientCertSecretName string
+
+	// ClustermeshApiserverRemoteCertCommonName is the CN of the ClustermeshApiserver remote cert
+	ClustermeshApiserverRemoteCertCommonName string
+	// ClustermeshApiserverRemoteCertValidityDuration of certificate
+	ClustermeshApiserverRemoteCertValidityDuration time.Duration
+	// ClustermeshApiserverRemoteCertSecretName where the ClustermeshApiserver remote cert and key will be stored
+	ClustermeshApiserverRemoteCertSecretName string
 }
 
 // PopulateFrom populates the config struct with the values provided by vp
@@ -240,4 +251,8 @@ func (c *CertGenConfig) PopulateFrom(vp *viper.Viper) {
 	c.ClustermeshApiserverClientCertCommonName = vp.GetString(ClustermeshApiserverClientCertCommonName)
 	c.ClustermeshApiserverClientCertValidityDuration = vp.GetDuration(ClustermeshApiserverClientCertValidityDuration)
 	c.ClustermeshApiserverClientCertSecretName = vp.GetString(ClustermeshApiserverClientCertSecretName)
+
+	c.ClustermeshApiserverRemoteCertCommonName = vp.GetString(ClustermeshApiserverRemoteCertCommonName)
+	c.ClustermeshApiserverRemoteCertValidityDuration = vp.GetDuration(ClustermeshApiserverRemoteCertValidityDuration)
+	c.ClustermeshApiserverRemoteCertSecretName = vp.GetString(ClustermeshApiserverRemoteCertSecretName)
 }
