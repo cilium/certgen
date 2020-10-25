@@ -161,7 +161,6 @@ func generateCertificates() error {
 	if err != nil {
 		return fmt.Errorf("failed initialize kubernetes client: %w", err)
 	}
-	count := 0
 
 	hubbleCA := generate.NewCA(option.Config.HubbleCAConfigMapName, option.Config.HubbleCAConfigMapNamespace)
 	if option.Config.HubbleCAGenerate {
@@ -224,42 +223,6 @@ func generateCertificates() error {
 		if err != nil {
 			return fmt.Errorf("failed to generate Hubble Relay server cert: %w", err)
 		}
-	}
-
-	if option.Config.HubbleCAGenerate {
-		ctx, cancel := context.WithTimeout(context.Background(), option.Config.K8sRequestTimeout)
-		defer cancel()
-		if err := hubbleCA.StoreAsConfigMap(ctx, k8sClient); err != nil {
-			return fmt.Errorf("failed to create configmap for Hubble CA: %w", err)
-		}
-		count++
-	}
-
-	if option.Config.HubbleServerCertGenerate {
-		ctx, cancel := context.WithTimeout(context.Background(), option.Config.K8sRequestTimeout)
-		defer cancel()
-		if err := hubbleServerCert.StoreAsSecret(ctx, k8sClient); err != nil {
-			return fmt.Errorf("failed to create secret for Hubble server cert: %w", err)
-		}
-		count++
-	}
-
-	if option.Config.HubbleRelayClientCertGenerate {
-		ctx, cancel := context.WithTimeout(context.Background(), option.Config.K8sRequestTimeout)
-		defer cancel()
-		if err := hubbleRelayClientCert.StoreAsSecret(ctx, k8sClient); err != nil {
-			return fmt.Errorf("failed to create secret for Hubble Relay client cert: %w", err)
-		}
-		count++
-	}
-
-	if option.Config.HubbleRelayServerCertGenerate {
-		ctx, cancel := context.WithTimeout(context.Background(), option.Config.K8sRequestTimeout)
-		defer cancel()
-		if err := hubbleRelayServerCert.StoreAsSecret(ctx, k8sClient); err != nil {
-			return fmt.Errorf("failed to create secret for Hubble Relay server cert: %w", err)
-		}
-		count++
 	}
 
 	if option.Config.ClustermeshApiserverCertsGenerate {
@@ -346,8 +309,48 @@ func generateCertificates() error {
 		if err != nil {
 			return fmt.Errorf("failed to generate ClustermeshApiserver remote cert: %w", err)
 		}
+	}
 
-		// Store the generated certs
+	// Store after all the requested certs have been succesfully generated
+	count := 0
+
+	if option.Config.HubbleCAGenerate {
+		ctx, cancel := context.WithTimeout(context.Background(), option.Config.K8sRequestTimeout)
+		defer cancel()
+		if err := hubbleCA.StoreAsConfigMap(ctx, k8sClient); err != nil {
+			return fmt.Errorf("failed to create configmap for Hubble CA: %w", err)
+		}
+		count++
+	}
+
+	if option.Config.HubbleServerCertGenerate {
+		ctx, cancel := context.WithTimeout(context.Background(), option.Config.K8sRequestTimeout)
+		defer cancel()
+		if err := hubbleServerCert.StoreAsSecret(ctx, k8sClient); err != nil {
+			return fmt.Errorf("failed to create secret for Hubble server cert: %w", err)
+		}
+		count++
+	}
+
+	if option.Config.HubbleRelayClientCertGenerate {
+		ctx, cancel := context.WithTimeout(context.Background(), option.Config.K8sRequestTimeout)
+		defer cancel()
+		if err := hubbleRelayClientCert.StoreAsSecret(ctx, k8sClient); err != nil {
+			return fmt.Errorf("failed to create secret for Hubble Relay client cert: %w", err)
+		}
+		count++
+	}
+
+	if option.Config.HubbleRelayServerCertGenerate {
+		ctx, cancel := context.WithTimeout(context.Background(), option.Config.K8sRequestTimeout)
+		defer cancel()
+		if err := hubbleRelayServerCert.StoreAsSecret(ctx, k8sClient); err != nil {
+			return fmt.Errorf("failed to create secret for Hubble Relay server cert: %w", err)
+		}
+		count++
+	}
+
+	if option.Config.ClustermeshApiserverCertsGenerate {
 		if !haveCASecret {
 			ctx, cancel := context.WithTimeout(context.Background(), option.Config.K8sRequestTimeout)
 			defer cancel()
