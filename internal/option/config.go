@@ -59,24 +59,27 @@ const (
 	ClustermeshApiserverCACertFile = "clustermesh-apiserver-ca-cert-file"
 	ClustermeshApiserverCAKeyFile  = "clustermesh-apiserver-ca-key-file"
 
-	ClustermeshApiserverCertsGenerate = "clustermesh-apiserver-certs-generate"
-
+	ClustermeshApiserverCACertGenerate         = "clustermesh-apiserver-ca-cert-generate"
 	ClustermeshApiserverCACertCommonName       = "clustermesh-apiserver-ca-cert-common-name"
 	ClustermeshApiserverCACertValidityDuration = "clustermesh-apiserver-ca-cert-validity-duration"
 	ClustermeshApiserverCACertSecretName       = "clustermesh-apiserver-ca-cert-secret-name"
 
+	ClustermeshApiserverServerCertGenerate         = "clustermesh-apiserver-server-cert-generate"
 	ClustermeshApiserverServerCertCommonName       = "clustermesh-apiserver-server-cert-common-name"
 	ClustermeshApiserverServerCertValidityDuration = "clustermesh-apiserver-server-cert-validity-duration"
 	ClustermeshApiserverServerCertSecretName       = "clustermesh-apiserver-server-cert-secret-name"
 
+	ClustermeshApiserverAdminCertGenerate         = "clustermesh-apiserver-admin-cert-generate"
 	ClustermeshApiserverAdminCertCommonName       = "clustermesh-apiserver-admin-cert-common-name"
 	ClustermeshApiserverAdminCertValidityDuration = "clustermesh-apiserver-admin-cert-validity-duration"
 	ClustermeshApiserverAdminCertSecretName       = "clustermesh-apiserver-admin-cert-secret-name"
 
+	ClustermeshApiserverClientCertGenerate         = "clustermesh-apiserver-client-cert-generate"
 	ClustermeshApiserverClientCertCommonName       = "clustermesh-apiserver-client-cert-common-name"
 	ClustermeshApiserverClientCertValidityDuration = "clustermesh-apiserver-client-cert-validity-duration"
 	ClustermeshApiserverClientCertSecretName       = "clustermesh-apiserver-client-cert-secret-name"
 
+	ClustermeshApiserverRemoteCertGenerate         = "clustermesh-apiserver-remote-cert-generate"
 	ClustermeshApiserverRemoteCertCommonName       = "clustermesh-apiserver-remote-cert-common-name"
 	ClustermeshApiserverRemoteCertValidityDuration = "clustermesh-apiserver-remote-cert-validity-duration"
 	ClustermeshApiserverRemoteCertSecretName       = "clustermesh-apiserver-remote-cert-secret-name"
@@ -154,12 +157,9 @@ type CertGenConfig struct {
 	// ClustermeshApiserverCAKeyFile is the path to the ClustermeshApiserver CA key PEM (if ClustermeshApiserverCertsGenerate is false)
 	ClustermeshApiserverCAKeyFile string
 
-	// ClustermeshApiserverCertsGenerate can be set to true to generate and store a new ClustermeshApiserver secrets and configmap
-	// New CA ConfigMap is created if created if existing one is not found. Delete the old ConfigMap to force regeneration.
-	// New CA is created if CA cert and key are not given.
-	// Server and client certs are created on each invocation.
-	ClustermeshApiserverCertsGenerate bool
-
+	// ClustermeshApiserverCACertGenerate can be set to true to generate and store a new ClustermeshApiserver CA secret.
+	// New CA secret is created if existing one is not found. Delete the old ConfigMap to force regeneration.
+	ClustermeshApiserverCACertGenerate bool
 	// ClustermeshApiserverCACertCommonName is the CN of the ClustermeshApiserver CA
 	ClustermeshApiserverCACertCommonName string
 	// ClustermeshApiserverCACertValidityDuration of certificate
@@ -167,6 +167,9 @@ type CertGenConfig struct {
 	// ClustermeshApiserverCACertSecretName where the ClustermeshApiserver CA cert will be stored
 	ClustermeshApiserverCACertSecretName string
 
+	// ClustermeshApiserverServerCertGenerate can be set to true to generate and store a new ClustermeshApiserver server secret.
+	// If true then any existing secret is overwritten with a new one.
+	ClustermeshApiserverServerCertGenerate bool
 	// ClustermeshApiserverServerCertCommonName is the CN of the ClustermeshApiserver server cert
 	ClustermeshApiserverServerCertCommonName string
 	// ClustermeshApiserverServerCertValidityDuration of certificate
@@ -174,6 +177,9 @@ type CertGenConfig struct {
 	// ClustermeshApiserverServerCertSecretName where the ClustermeshApiserver server cert and key will be stored
 	ClustermeshApiserverServerCertSecretName string
 
+	// ClustermeshApiserverAdminCertGenerate can be set to true to generate and store a new ClustermeshApiserver admin secret.
+	// If true then any existing secret is overwritten with a new one.
+	ClustermeshApiserverAdminCertGenerate bool
 	// ClustermeshApiserverAdminCertCommonName is the CN of the ClustermeshApiserver admin cert
 	ClustermeshApiserverAdminCertCommonName string
 	// ClustermeshApiserverAdminCertValidityDuration of certificate
@@ -181,6 +187,9 @@ type CertGenConfig struct {
 	// ClustermeshApiserverAdminCertSecretName where the ClustermeshApiserver admin cert and key will be stored
 	ClustermeshApiserverAdminCertSecretName string
 
+	// ClustermeshApiserverClientCertGenerate can be set to true to generate and store a new ClustermeshApiserver client secret.
+	// If true then any existing secret is overwritten with a new one.
+	ClustermeshApiserverClientCertGenerate bool
 	// ClustermeshApiserverClientCertCommonName is the CN of the ClustermeshApiserver client cert
 	ClustermeshApiserverClientCertCommonName string
 	// ClustermeshApiserverClientCertValidityDuration of certificate
@@ -188,6 +197,9 @@ type CertGenConfig struct {
 	// ClustermeshApiserverClientCertSecretName where the ClustermeshApiserver client cert and key will be stored
 	ClustermeshApiserverClientCertSecretName string
 
+	// ClustermeshApiserverRemoteCertGenerate can be set to true to generate and store a new ClustermeshApiserver remote secret.
+	// If true then any existing secret is overwritten with a new one.
+	ClustermeshApiserverRemoteCertGenerate bool
 	// ClustermeshApiserverRemoteCertCommonName is the CN of the ClustermeshApiserver remote cert
 	ClustermeshApiserverRemoteCertCommonName string
 	// ClustermeshApiserverRemoteCertValidityDuration of certificate
@@ -234,24 +246,27 @@ func (c *CertGenConfig) PopulateFrom(vp *viper.Viper) {
 	c.ClustermeshApiserverCACertFile = vp.GetString(ClustermeshApiserverCACertFile)
 	c.ClustermeshApiserverCAKeyFile = vp.GetString(ClustermeshApiserverCAKeyFile)
 
-	c.ClustermeshApiserverCertsGenerate = vp.GetBool(ClustermeshApiserverCertsGenerate)
-
+	c.ClustermeshApiserverCACertGenerate = vp.GetBool(ClustermeshApiserverCACertGenerate)
 	c.ClustermeshApiserverCACertCommonName = vp.GetString(ClustermeshApiserverCACertCommonName)
 	c.ClustermeshApiserverCACertValidityDuration = vp.GetDuration(ClustermeshApiserverCACertValidityDuration)
 	c.ClustermeshApiserverCACertSecretName = vp.GetString(ClustermeshApiserverCACertSecretName)
 
+	c.ClustermeshApiserverServerCertGenerate = vp.GetBool(ClustermeshApiserverServerCertGenerate)
 	c.ClustermeshApiserverServerCertCommonName = vp.GetString(ClustermeshApiserverServerCertCommonName)
 	c.ClustermeshApiserverServerCertValidityDuration = vp.GetDuration(ClustermeshApiserverServerCertValidityDuration)
 	c.ClustermeshApiserverServerCertSecretName = vp.GetString(ClustermeshApiserverServerCertSecretName)
 
+	c.ClustermeshApiserverAdminCertGenerate = vp.GetBool(ClustermeshApiserverAdminCertGenerate)
 	c.ClustermeshApiserverAdminCertCommonName = vp.GetString(ClustermeshApiserverAdminCertCommonName)
 	c.ClustermeshApiserverAdminCertValidityDuration = vp.GetDuration(ClustermeshApiserverAdminCertValidityDuration)
 	c.ClustermeshApiserverAdminCertSecretName = vp.GetString(ClustermeshApiserverAdminCertSecretName)
 
+	c.ClustermeshApiserverClientCertGenerate = vp.GetBool(ClustermeshApiserverClientCertGenerate)
 	c.ClustermeshApiserverClientCertCommonName = vp.GetString(ClustermeshApiserverClientCertCommonName)
 	c.ClustermeshApiserverClientCertValidityDuration = vp.GetDuration(ClustermeshApiserverClientCertValidityDuration)
 	c.ClustermeshApiserverClientCertSecretName = vp.GetString(ClustermeshApiserverClientCertSecretName)
 
+	c.ClustermeshApiserverRemoteCertGenerate = vp.GetBool(ClustermeshApiserverRemoteCertGenerate)
 	c.ClustermeshApiserverRemoteCertCommonName = vp.GetString(ClustermeshApiserverRemoteCertCommonName)
 	c.ClustermeshApiserverRemoteCertValidityDuration = vp.GetDuration(ClustermeshApiserverRemoteCertValidityDuration)
 	c.ClustermeshApiserverRemoteCertSecretName = vp.GetString(ClustermeshApiserverRemoteCertSecretName)
