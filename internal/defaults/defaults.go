@@ -45,24 +45,27 @@ const (
 
 	CiliumNamespace = "kube-system"
 
-	ClustermeshApiserverCertsGenerate = false
-
+	ClustermeshApiserverCACertGenerate         = false
 	ClustermeshApiserverCACertCommonName       = "clustermesh-apiserver-ca.cilium.io"
 	ClustermeshApiserverCACertValidityDuration = 3 * 365 * 24 * time.Hour
 	ClustermeshApiserverCACertSecretName       = "clustermesh-apiserver-ca-cert"
 
+	ClustermeshApiserverServerCertGenerate         = false
 	ClustermeshApiserverServerCertCommonName       = "clustermesh-apiserver.cilium.io"
 	ClustermeshApiserverServerCertValidityDuration = 3 * 365 * 24 * time.Hour
 	ClustermeshApiserverServerCertSecretName       = "clustermesh-apiserver-server-cert"
 
+	ClustermeshApiserverAdminCertGenerate         = false
 	ClustermeshApiserverAdminCertCommonName       = "root"
 	ClustermeshApiserverAdminCertValidityDuration = 3 * 365 * 24 * time.Hour
 	ClustermeshApiserverAdminCertSecretName       = "clustermesh-apiserver-admin-cert"
 
+	ClustermeshApiserverClientCertGenerate         = false
 	ClustermeshApiserverClientCertCommonName       = "externalworkload"
 	ClustermeshApiserverClientCertValidityDuration = 3 * 365 * 24 * time.Hour
 	ClustermeshApiserverClientCertSecretName       = "clustermesh-apiserver-client-cert"
 
+	ClustermeshApiserverRemoteCertGenerate         = false
 	ClustermeshApiserverRemoteCertCommonName       = "remote"
 	ClustermeshApiserverRemoteCertValidityDuration = 3 * 365 * 24 * time.Hour
 	ClustermeshApiserverRemoteCertSecretName       = "clustermesh-apiserver-remote-cert"

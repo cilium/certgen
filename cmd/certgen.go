@@ -102,24 +102,27 @@ func New() *cobra.Command {
 	flags.String(option.ClustermeshApiserverCACertFile, "", "Path to provided clustermesh-apiserver CA certificate file (required if CA does not exist and is not to be generated)")
 	flags.String(option.ClustermeshApiserverCAKeyFile, "", "Path to provided clustermesh-apiserver CA key file (required if CA does not exist and is not to be generated)")
 
-	flags.Bool(option.ClustermeshApiserverCertsGenerate, defaults.ClustermeshApiserverCertsGenerate, "Generate and store clustermesh-apiserver certificates")
-
+	flags.Bool(option.ClustermeshApiserverCACertGenerate, defaults.ClustermeshApiserverCACertGenerate, "Generate and store clustermesh-apiserver CA certificate")
 	flags.String(option.ClustermeshApiserverCACertCommonName, defaults.ClustermeshApiserverCACertCommonName, "clustermesh-apiserver CA certificate common name")
 	flags.Duration(option.ClustermeshApiserverCACertValidityDuration, defaults.ClustermeshApiserverCACertValidityDuration, "clustermesh-apiserver CA certificate validity duration")
 	flags.String(option.ClustermeshApiserverCACertSecretName, defaults.ClustermeshApiserverCACertSecretName, "Name of the K8s Secret where the clustermesh-apiserver CA cert is stored in")
 
+	flags.Bool(option.ClustermeshApiserverServerCertGenerate, defaults.ClustermeshApiserverServerCertGenerate, "Generate and store clustermesh-apiserver server certificate")
 	flags.String(option.ClustermeshApiserverServerCertCommonName, defaults.ClustermeshApiserverServerCertCommonName, "clustermesh-apiserver server certificate common name")
 	flags.Duration(option.ClustermeshApiserverServerCertValidityDuration, defaults.ClustermeshApiserverServerCertValidityDuration, "clustermesh-apiserver server certificate validity duration")
 	flags.String(option.ClustermeshApiserverServerCertSecretName, defaults.ClustermeshApiserverServerCertSecretName, "Name of the K8s Secret where the clustermesh-apiserver server cert and key are stored in")
 
+	flags.Bool(option.ClustermeshApiserverAdminCertGenerate, defaults.ClustermeshApiserverAdminCertGenerate, "Generate and store clustermesh-apiserver admin certificate")
 	flags.String(option.ClustermeshApiserverAdminCertCommonName, defaults.ClustermeshApiserverAdminCertCommonName, "clustermesh-apiserver admin certificate common name")
 	flags.Duration(option.ClustermeshApiserverAdminCertValidityDuration, defaults.ClustermeshApiserverAdminCertValidityDuration, "clustermesh-apiserver admin certificate validity duration")
 	flags.String(option.ClustermeshApiserverAdminCertSecretName, defaults.ClustermeshApiserverAdminCertSecretName, "Name of the K8s Secret where the clustermesh-apiserver admin cert and key are stored in")
 
+	flags.Bool(option.ClustermeshApiserverClientCertGenerate, defaults.ClustermeshApiserverClientCertGenerate, "Generate and store clustermesh-apiserver client certificate")
 	flags.String(option.ClustermeshApiserverClientCertCommonName, defaults.ClustermeshApiserverClientCertCommonName, "clustermesh-apiserver client certificate common name")
 	flags.Duration(option.ClustermeshApiserverClientCertValidityDuration, defaults.ClustermeshApiserverClientCertValidityDuration, "clustermesh-apiserver client certificate validity duration")
 	flags.String(option.ClustermeshApiserverClientCertSecretName, defaults.ClustermeshApiserverClientCertSecretName, "Name of the K8s Secret where the clustermesh-apiserver client cert and key are stored in")
 
+	flags.Bool(option.ClustermeshApiserverRemoteCertGenerate, defaults.ClustermeshApiserverRemoteCertGenerate, "Generate and store clustermesh-apiserver remote certificate")
 	flags.String(option.ClustermeshApiserverRemoteCertCommonName, defaults.ClustermeshApiserverRemoteCertCommonName, "clustermesh-apiserver remote certificate common name")
 	flags.Duration(option.ClustermeshApiserverRemoteCertValidityDuration, defaults.ClustermeshApiserverRemoteCertValidityDuration, "clustermesh-apiserver remote certificate validity duration")
 	flags.String(option.ClustermeshApiserverRemoteCertSecretName, defaults.ClustermeshApiserverRemoteCertSecretName, "Name of the K8s Secret where the clustermesh-apiserver remote cert and key are stored in")
@@ -225,41 +228,41 @@ func generateCertificates() error {
 		}
 	}
 
-	if option.Config.ClustermeshApiserverCertsGenerate {
-		haveCASecret := false
-		clustermeshApiserverCA := generate.NewCA(option.Config.ClustermeshApiserverCACertSecretName, option.Config.CiliumNamespace)
-
-		// Load CA from file?
-		if option.Config.ClustermeshApiserverCACertFile != "" && option.Config.ClustermeshApiserverCAKeyFile != "" {
-			log.Info("Loading ClustermeshApiserver CA from file")
-			err = clustermeshApiserverCA.LoadFromFile(option.Config.ClustermeshApiserverCACertFile, option.Config.ClustermeshApiserverCAKeyFile)
-			if err != nil {
-				return fmt.Errorf("failed to load ClustermeshApiserver CA: %w", err)
-			}
-		} else {
-			// Does the secret already exist?
-			ctx, cancel := context.WithTimeout(context.Background(), option.Config.K8sRequestTimeout)
-			defer cancel()
-			err = clustermeshApiserverCA.LoadFromSecret(ctx, k8sClient)
-			if err != nil {
-				if k8sErrors.IsNotFound(err) {
-					log.Info("ClustermeshApiserver CA secret does not exist, generating new CA")
-					err = clustermeshApiserverCA.Generate(option.Config.ClustermeshApiserverCACertCommonName, option.Config.ClustermeshApiserverCACertValidityDuration)
-					if err != nil {
-						return fmt.Errorf("failed to generate ClustermeshApiserver CA: %w", err)
-					}
-				} else {
-					// Permission error or something like that
-					return fmt.Errorf("failed to load ClustermeshApiserver CA secret: %w", err)
+	haveCASecret := false
+	clustermeshApiserverCA := generate.NewCA(option.Config.ClustermeshApiserverCACertSecretName, option.Config.CiliumNamespace)
+	// Load CA from file?
+	if option.Config.ClustermeshApiserverCACertFile != "" && option.Config.ClustermeshApiserverCAKeyFile != "" {
+		log.Info("Loading ClustermeshApiserver CA from file")
+		err = clustermeshApiserverCA.LoadFromFile(option.Config.ClustermeshApiserverCACertFile, option.Config.ClustermeshApiserverCAKeyFile)
+		if err != nil {
+			return fmt.Errorf("failed to load ClustermeshApiserver CA: %w", err)
+		}
+	} else {
+		// Does the secret already exist?
+		ctx, cancel := context.WithTimeout(context.Background(), option.Config.K8sRequestTimeout)
+		defer cancel()
+		err = clustermeshApiserverCA.LoadFromSecret(ctx, k8sClient)
+		if err != nil {
+			if k8sErrors.IsNotFound(err) && option.Config.ClustermeshApiserverCACertGenerate {
+				log.Info("ClustermeshApiserver CA secret does not exist, generating new CA")
+				err = clustermeshApiserverCA.Generate(option.Config.ClustermeshApiserverCACertCommonName, option.Config.ClustermeshApiserverCACertValidityDuration)
+				if err != nil {
+					return fmt.Errorf("failed to generate ClustermeshApiserver CA: %w", err)
 				}
 			} else {
-				log.Info("Loaded ClustermeshApiserver CA Secret")
-				haveCASecret = true
+				// Permission error or something like that
+				return fmt.Errorf("failed to load ClustermeshApiserver CA secret: %w", err)
 			}
+		} else {
+			log.Info("Loaded ClustermeshApiserver CA Secret")
+			haveCASecret = true
 		}
+	}
 
+	var clustermeshApiserverServerCert *generate.Cert
+	if option.Config.ClustermeshApiserverServerCertGenerate {
 		log.Info("Generating server certificate for ClustermeshApiserver")
-		clustermeshApiserverServerCert := generate.NewCert(
+		clustermeshApiserverServerCert = generate.NewCert(
 			option.Config.ClustermeshApiserverServerCertCommonName,
 			option.Config.ClustermeshApiserverServerCertValidityDuration,
 			defaults.ClustermeshApiserverCertUsage,
@@ -270,9 +273,12 @@ func generateCertificates() error {
 		if err != nil {
 			return fmt.Errorf("failed to generate ClustermeshApiserver server cert: %w", err)
 		}
+	}
 
+	var clustermeshApiserverAdminCert *generate.Cert
+	if option.Config.ClustermeshApiserverAdminCertGenerate {
 		log.Info("Generating admin certificate for ClustermeshApiserver")
-		clustermeshApiserverAdminCert := generate.NewCert(
+		clustermeshApiserverAdminCert = generate.NewCert(
 			option.Config.ClustermeshApiserverAdminCertCommonName,
 			option.Config.ClustermeshApiserverAdminCertValidityDuration,
 			defaults.ClustermeshApiserverCertUsage,
@@ -283,9 +289,12 @@ func generateCertificates() error {
 		if err != nil {
 			return fmt.Errorf("failed to generate ClustermeshApiserver admin cert: %w", err)
 		}
+	}
 
+	var clustermeshApiserverClientCert *generate.Cert
+	if option.Config.ClustermeshApiserverClientCertGenerate {
 		log.Info("Generating client certificate for ClustermeshApiserver")
-		clustermeshApiserverClientCert := generate.NewCert(
+		clustermeshApiserverClientCert = generate.NewCert(
 			option.Config.ClustermeshApiserverClientCertCommonName,
 			option.Config.ClustermeshApiserverClientCertValidityDuration,
 			defaults.ClustermeshApiserverCertUsage,
@@ -296,9 +305,12 @@ func generateCertificates() error {
 		if err != nil {
 			return fmt.Errorf("failed to generate ClustermeshApiserver client cert: %w", err)
 		}
+	}
 
+	var clustermeshApiserverRemoteCert *generate.Cert
+	if option.Config.ClustermeshApiserverRemoteCertGenerate {
 		log.Info("Generating remote certificate for ClustermeshApiserver")
-		clustermeshApiserverRemoteCert := generate.NewCert(
+		clustermeshApiserverRemoteCert = generate.NewCert(
 			option.Config.ClustermeshApiserverRemoteCertCommonName,
 			option.Config.ClustermeshApiserverRemoteCertValidityDuration,
 			defaults.ClustermeshApiserverCertUsage,
@@ -350,38 +362,44 @@ func generateCertificates() error {
 		count++
 	}
 
-	if option.Config.ClustermeshApiserverCertsGenerate {
-		if !haveCASecret {
-			ctx, cancel := context.WithTimeout(context.Background(), option.Config.K8sRequestTimeout)
-			defer cancel()
-			if err := clustermeshApiserverCA.StoreAsSecret(ctx, k8sClient); err != nil {
-				return fmt.Errorf("failed to create secret for ClustermeshApiserver CA: %w", err)
-			}
-			count++
+	if option.Config.ClustermeshApiserverCACertGenerate && !haveCASecret {
+		ctx, cancel := context.WithTimeout(context.Background(), option.Config.K8sRequestTimeout)
+		defer cancel()
+		if err := clustermeshApiserverCA.StoreAsSecret(ctx, k8sClient); err != nil {
+			return fmt.Errorf("failed to create secret for ClustermeshApiserver CA: %w", err)
 		}
+		count++
+	}
 
+	if option.Config.ClustermeshApiserverServerCertGenerate {
 		ctx, cancel := context.WithTimeout(context.Background(), option.Config.K8sRequestTimeout)
 		defer cancel()
 		if err := clustermeshApiserverServerCert.StoreAsSecret(ctx, k8sClient); err != nil {
 			return fmt.Errorf("failed to create secret for ClustermeshApiserver server cert: %w", err)
 		}
 		count++
+	}
 
-		ctx, cancel = context.WithTimeout(context.Background(), option.Config.K8sRequestTimeout)
+	if option.Config.ClustermeshApiserverAdminCertGenerate {
+		ctx, cancel := context.WithTimeout(context.Background(), option.Config.K8sRequestTimeout)
 		defer cancel()
 		if err := clustermeshApiserverAdminCert.StoreAsSecret(ctx, k8sClient); err != nil {
 			return fmt.Errorf("failed to create secret for ClustermeshApiserver admin cert: %w", err)
 		}
 		count++
+	}
 
-		ctx, cancel = context.WithTimeout(context.Background(), option.Config.K8sRequestTimeout)
+	if option.Config.ClustermeshApiserverClientCertGenerate {
+		ctx, cancel := context.WithTimeout(context.Background(), option.Config.K8sRequestTimeout)
 		defer cancel()
 		if err := clustermeshApiserverClientCert.StoreAsSecret(ctx, k8sClient); err != nil {
 			return fmt.Errorf("failed to create secret for ClustermeshApiserver client cert: %w", err)
 		}
 		count++
+	}
 
-		ctx, cancel = context.WithTimeout(context.Background(), option.Config.K8sRequestTimeout)
+	if option.Config.ClustermeshApiserverRemoteCertGenerate {
+		ctx, cancel := context.WithTimeout(context.Background(), option.Config.K8sRequestTimeout)
 		defer cancel()
 		if err := clustermeshApiserverRemoteCert.StoreAsSecret(ctx, k8sClient); err != nil {
 			return fmt.Errorf("failed to create secret for ClustermeshApiserver remote cert: %w", err)
