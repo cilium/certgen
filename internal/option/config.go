@@ -208,6 +208,16 @@ type CertGenConfig struct {
 	ClustermeshApiserverRemoteCertSecretName string
 }
 
+// getStringWithFallback returns the value associated with the key as a string
+// if it is non-empty. If the value is empty, this function returns the value
+// associated with fallbackKey
+func getStringWithFallback(vp *viper.Viper, key, fallbackKey string) string {
+	if value := vp.GetString(key); value != "" {
+		return value
+	}
+	return vp.GetString(fallbackKey)
+}
+
 // PopulateFrom populates the config struct with the values provided by vp
 func (c *CertGenConfig) PopulateFrom(vp *viper.Viper) {
 	c.Debug = vp.GetBool(Debug)
@@ -221,25 +231,25 @@ func (c *CertGenConfig) PopulateFrom(vp *viper.Viper) {
 	c.HubbleCACommonName = vp.GetString(HubbleCACommonName)
 	c.HubbleCAValidityDuration = vp.GetDuration(HubbleCAValidityDuration)
 	c.HubbleCAConfigMapName = vp.GetString(HubbleCAConfigMapName)
-	c.HubbleCAConfigMapNamespace = vp.GetString(HubbleCAConfigMapNamespace)
+	c.HubbleCAConfigMapNamespace = getStringWithFallback(vp, HubbleCAConfigMapNamespace, CiliumNamespace)
 
 	c.HubbleRelayClientCertGenerate = vp.GetBool(HubbleRelayClientCertGenerate)
 	c.HubbleRelayClientCertCommonName = vp.GetString(HubbleRelayClientCertCommonName)
 	c.HubbleRelayClientCertValidityDuration = vp.GetDuration(HubbleRelayClientCertValidityDuration)
 	c.HubbleRelayClientCertSecretName = vp.GetString(HubbleRelayClientCertSecretName)
-	c.HubbleRelayClientCertSecretNamespace = vp.GetString(HubbleRelayClientCertSecretNamespace)
+	c.HubbleRelayClientCertSecretNamespace = getStringWithFallback(vp, HubbleRelayClientCertSecretNamespace, CiliumNamespace)
 
 	c.HubbleRelayServerCertGenerate = vp.GetBool(HubbleRelayServerCertGenerate)
 	c.HubbleRelayServerCertCommonName = vp.GetString(HubbleRelayServerCertCommonName)
 	c.HubbleRelayServerCertValidityDuration = vp.GetDuration(HubbleRelayServerCertValidityDuration)
 	c.HubbleRelayServerCertSecretName = vp.GetString(HubbleRelayServerCertSecretName)
-	c.HubbleRelayServerCertSecretNamespace = vp.GetString(HubbleRelayServerCertSecretNamespace)
+	c.HubbleRelayServerCertSecretNamespace = getStringWithFallback(vp, HubbleRelayServerCertSecretNamespace, CiliumNamespace)
 
 	c.HubbleServerCertGenerate = vp.GetBool(HubbleServerCertGenerate)
 	c.HubbleServerCertCommonName = vp.GetString(HubbleServerCertCommonName)
 	c.HubbleServerCertValidityDuration = vp.GetDuration(HubbleServerCertValidityDuration)
 	c.HubbleServerCertSecretName = vp.GetString(HubbleServerCertSecretName)
-	c.HubbleServerCertSecretNamespace = vp.GetString(HubbleServerCertSecretNamespace)
+	c.HubbleServerCertSecretNamespace = getStringWithFallback(vp, HubbleServerCertSecretNamespace, CiliumNamespace)
 
 	c.CiliumNamespace = vp.GetString(CiliumNamespace)
 
