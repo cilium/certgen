@@ -76,25 +76,25 @@ func New() *cobra.Command {
 	flags.String(option.HubbleCACommonName, defaults.HubbleCACommonName, "Hubble CA common name")
 	flags.Duration(option.HubbleCAValidityDuration, defaults.HubbleCAValidityDuration, "Hubble CA validity duration")
 	flags.String(option.HubbleCAConfigMapName, defaults.HubbleCAConfigMapName, "Name of the K8s ConfigMap where the Hubble CA cert is stored in")
-	flags.String(option.HubbleCAConfigMapNamespace, defaults.HubbleCAConfigMapNamespace, "Namespace of the ConfigMap where the Hubble CA cert is stored in")
+	flags.String(option.HubbleCAConfigMapNamespace, "", "Overwrites the namespace of the ConfigMap where the Hubble CA cert is stored in")
 
 	flags.Bool(option.HubbleRelayClientCertGenerate, defaults.HubbleRelayClientCertGenerate, "Generate and store Hubble Relay client certificate")
 	flags.String(option.HubbleRelayClientCertCommonName, defaults.HubbleRelayClientCertCommonName, "Hubble Relay client certificate common name")
 	flags.Duration(option.HubbleRelayClientCertValidityDuration, defaults.HubbleRelayClientCertValidityDuration, "Hubble Relay client certificate validity duration")
 	flags.String(option.HubbleRelayClientCertSecretName, defaults.HubbleRelayClientCertSecretName, "Name of the K8s Secret where the Hubble Relay client cert and key are stored in")
-	flags.String(option.HubbleRelayClientCertSecretNamespace, defaults.HubbleRelayClientCertSecretNamespace, "Namespace of the K8s Secret where the Hubble Relay client cert and key are stored in")
+	flags.String(option.HubbleRelayClientCertSecretNamespace, "", "Overwrites the namespace of the K8s Secret where the Hubble Relay client cert and key are stored in")
 
 	flags.Bool(option.HubbleRelayServerCertGenerate, defaults.HubbleRelayServerCertGenerate, "Generate and store Hubble Relay server certificate")
 	flags.String(option.HubbleRelayServerCertCommonName, defaults.HubbleRelayServerCertCommonName, "Hubble Relay server certificate common name")
 	flags.Duration(option.HubbleRelayServerCertValidityDuration, defaults.HubbleRelayServerCertValidityDuration, "Hubble Relay server certificate validity duration")
 	flags.String(option.HubbleRelayServerCertSecretName, defaults.HubbleRelayServerCertSecretName, "Name of the K8s Secret where the Hubble Relay server cert and key are stored in")
-	flags.String(option.HubbleRelayServerCertSecretNamespace, defaults.HubbleRelayServerCertSecretNamespace, "Namespace of the K8s Secret where the Hubble Relay server cert and key are stored in")
+	flags.String(option.HubbleRelayServerCertSecretNamespace, "", "Overwrites the namespace of the K8s Secret where the Hubble Relay server cert and key are stored in")
 
 	flags.Bool(option.HubbleServerCertGenerate, defaults.HubbleServerCertGenerate, "Generate and store Hubble server certificate")
 	flags.String(option.HubbleServerCertCommonName, defaults.HubbleServerCertCommonName, "Hubble server certificate common name")
 	flags.Duration(option.HubbleServerCertValidityDuration, defaults.HubbleServerCertValidityDuration, "Hubble server certificate validity duration")
 	flags.String(option.HubbleServerCertSecretName, defaults.HubbleServerCertSecretName, "Name of the K8s Secret where the Hubble server cert and key are stored in")
-	flags.String(option.HubbleServerCertSecretNamespace, defaults.HubbleServerCertSecretNamespace, "Namespace of the K8s Secret where the Hubble server cert and key are stored in")
+	flags.String(option.HubbleServerCertSecretNamespace, "", "Overwrites the namespace of the K8s Secret where the Hubble server cert and key are stored in")
 
 	// Extenal Workload certs
 	flags.String(option.CiliumNamespace, defaults.CiliumNamespace, "Namespace where the cert secrets and configmaps are stored in")
