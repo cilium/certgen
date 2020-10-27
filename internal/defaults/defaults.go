@@ -20,9 +20,13 @@ const (
 	Debug = false
 
 	HubbleCAGenerate         = false
+	HubbleCAReuseSecret      = false
 	HubbleCACommonName       = "hubble-ca.cilium.io"
 	HubbleCAValidityDuration = 3 * 365 * 24 * time.Hour
-	HubbleCAConfigMapName    = "hubble-ca-cert"
+	HubbleCASecretName       = "hubble-ca-secret"
+
+	HubbleCAConfigMapCreate = false
+	HubbleCAConfigMapName   = "hubble-ca-cert"
 
 	HubbleServerCertGenerate         = false
 	HubbleServerCertCommonName       = "*.default.hubble-grpc.cilium.io"
@@ -42,6 +46,7 @@ const (
 	CiliumNamespace = "kube-system"
 
 	ClustermeshApiserverCACertGenerate         = false
+	ClustermeshApiserverCACertReuseSecret      = false
 	ClustermeshApiserverCACertCommonName       = "clustermesh-apiserver-ca.cilium.io"
 	ClustermeshApiserverCACertValidityDuration = 3 * 365 * 24 * time.Hour
 	ClustermeshApiserverCACertSecretName       = "clustermesh-apiserver-ca-cert"

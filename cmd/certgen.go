@@ -73,8 +73,13 @@ func New() *cobra.Command {
 	flags.String(option.HubbleCAKeyFile, "", "Path to provided Hubble CA key file (required if Hubble CA is not generated)")
 
 	flags.Bool(option.HubbleCAGenerate, defaults.HubbleCAGenerate, "Generate and store Hubble CA certificate")
+	flags.Bool(option.HubbleCAReuseSecret, defaults.HubbleCAReuseSecret, "Reuse the Hubble CA secret if it exists, otherwise generate a new one")
 	flags.String(option.HubbleCACommonName, defaults.HubbleCACommonName, "Hubble CA common name")
 	flags.Duration(option.HubbleCAValidityDuration, defaults.HubbleCAValidityDuration, "Hubble CA validity duration")
+	flags.String(option.HubbleCASecretName, defaults.HubbleCASecretName, "Name of the K8s Secret where the Hubble CA cert and key are stored in")
+	flags.String(option.HubbleCASecretNamespace, "", "Overwrites the namespace of the K8s Secret where the Hubble CA cert and key are stored in")
+
+	flags.Bool(option.HubbleCAConfigMapCreate, defaults.HubbleCAConfigMapCreate, "Store the Hubble CA cert additionally in a K8s ConfigMap")
 	flags.String(option.HubbleCAConfigMapName, defaults.HubbleCAConfigMapName, "Name of the K8s ConfigMap where the Hubble CA cert is stored in")
 	flags.String(option.HubbleCAConfigMapNamespace, "", "Overwrites the namespace of the ConfigMap where the Hubble CA cert is stored in")
 
@@ -103,6 +108,7 @@ func New() *cobra.Command {
 	flags.String(option.ClustermeshApiserverCAKeyFile, "", "Path to provided clustermesh-apiserver CA key file (required if CA does not exist and is not to be generated)")
 
 	flags.Bool(option.ClustermeshApiserverCACertGenerate, defaults.ClustermeshApiserverCACertGenerate, "Generate and store clustermesh-apiserver CA certificate")
+	flags.Bool(option.ClustermeshApiserverCACertReuseSecret, defaults.ClustermeshApiserverCACertReuseSecret, "Reuse the clustermesh-apiserver CA secret if it exists, otherwise generate a new one")
 	flags.String(option.ClustermeshApiserverCACertCommonName, defaults.ClustermeshApiserverCACertCommonName, "clustermesh-apiserver CA certificate common name")
 	flags.Duration(option.ClustermeshApiserverCACertValidityDuration, defaults.ClustermeshApiserverCACertValidityDuration, "clustermesh-apiserver CA certificate validity duration")
 	flags.String(option.ClustermeshApiserverCACertSecretName, defaults.ClustermeshApiserverCACertSecretName, "Name of the K8s Secret where the clustermesh-apiserver CA cert is stored in")
@@ -165,18 +171,39 @@ func generateCertificates() error {
 		return fmt.Errorf("failed initialize kubernetes client: %w", err)
 	}
 
-	hubbleCA := generate.NewCA(option.Config.HubbleCAConfigMapName, option.Config.HubbleCAConfigMapNamespace)
-	if option.Config.HubbleCAGenerate {
-		log.Info("Generating Hubble CA")
+	hubbleCA := generate.NewCA(option.Config.HubbleCASecretName, option.Config.HubbleCASecretNamespace)
+	if option.Config.HubbleCAConfigMapCreate {
+		hubbleCA.ConfigMapName = option.Config.HubbleCAConfigMapName
+		hubbleCA.ConfigMapNamespace = option.Config.HubbleCAConfigMapNamespace
+	}
+
+	if option.Config.HubbleCAReuseSecret {
+		// Read CA from Secret if it already exists
+		ctx, cancel := context.WithTimeout(context.Background(), option.Config.K8sRequestTimeout)
+		defer cancel()
+		err = hubbleCA.LoadFromSecret(ctx, k8sClient)
+		if err != nil {
+			if k8sErrors.IsNotFound(err) && option.Config.HubbleCAGenerate {
+				log.Info("Hubble CA secret does not exist, generating new CA")
+			} else {
+				// Permission error or something like that
+				return fmt.Errorf("failed to load Hubble CA from secret: %w", err)
+			}
+		}
+		log.Info("Loaded Hubble CA Secret")
+	}
+
+	// Generate a CA only if we were not able to load it from secret
+	if option.Config.HubbleCAGenerate && !hubbleCA.LoadedFromSecret() {
 		err = hubbleCA.Generate(option.Config.HubbleCACommonName, option.Config.HubbleCAValidityDuration)
 		if err != nil {
 			return fmt.Errorf("failed to generate Hubble CA: %w", err)
 		}
-	} else if option.Config.HubbleServerCertGenerate || option.Config.HubbleRelayClientCertGenerate || option.Config.HubbleRelayServerCertGenerate {
+	} else if option.Config.HubbleCACertFile != "" && option.Config.HubbleCAKeyFile != "" {
 		log.Info("Loading Hubble CA from file")
 		err = hubbleCA.LoadFromFile(option.Config.HubbleCACertFile, option.Config.HubbleCAKeyFile)
 		if err != nil {
-			return fmt.Errorf("failed to load Hubble CA: %w", err)
+			return fmt.Errorf("failed to load Hubble CA from file: %w", err)
 		}
 	}
 
@@ -228,34 +255,34 @@ func generateCertificates() error {
 		}
 	}
 
-	haveCASecret := false
 	clustermeshApiserverCA := generate.NewCA(option.Config.ClustermeshApiserverCACertSecretName, option.Config.CiliumNamespace)
-	// Load CA from file?
-	if option.Config.ClustermeshApiserverCACertFile != "" && option.Config.ClustermeshApiserverCAKeyFile != "" {
-		log.Info("Loading ClustermeshApiserver CA from file")
-		err = clustermeshApiserverCA.LoadFromFile(option.Config.ClustermeshApiserverCACertFile, option.Config.ClustermeshApiserverCAKeyFile)
-		if err != nil {
-			return fmt.Errorf("failed to load ClustermeshApiserver CA: %w", err)
-		}
-	} else {
-		// Does the secret already exist?
+	if option.Config.ClustermeshApiserverCAReuseSecret {
+		// Read CA from Secret if it already exists
 		ctx, cancel := context.WithTimeout(context.Background(), option.Config.K8sRequestTimeout)
 		defer cancel()
 		err = clustermeshApiserverCA.LoadFromSecret(ctx, k8sClient)
 		if err != nil {
 			if k8sErrors.IsNotFound(err) && option.Config.ClustermeshApiserverCACertGenerate {
 				log.Info("ClustermeshApiserver CA secret does not exist, generating new CA")
-				err = clustermeshApiserverCA.Generate(option.Config.ClustermeshApiserverCACertCommonName, option.Config.ClustermeshApiserverCACertValidityDuration)
-				if err != nil {
-					return fmt.Errorf("failed to generate ClustermeshApiserver CA: %w", err)
-				}
 			} else {
 				// Permission error or something like that
-				return fmt.Errorf("failed to load ClustermeshApiserver CA secret: %w", err)
+				return fmt.Errorf("failed to load ClustermeshApiserver CA from secret: %w", err)
 			}
-		} else {
-			log.Info("Loaded ClustermeshApiserver CA Secret")
-			haveCASecret = true
+		}
+		log.Info("Loaded ClustermeshApiserver CA Secret")
+	}
+
+	// Generate a CA only if we were not able to load it from secret
+	if option.Config.ClustermeshApiserverCACertGenerate && !clustermeshApiserverCA.LoadedFromSecret() {
+		err = clustermeshApiserverCA.Generate(option.Config.ClustermeshApiserverCACertCommonName, option.Config.ClustermeshApiserverCACertValidityDuration)
+		if err != nil {
+			return fmt.Errorf("failed to generate ClustermeshApiserver CA: %w", err)
+		}
+	} else if option.Config.ClustermeshApiserverCACertFile != "" && option.Config.ClustermeshApiserverCAKeyFile != "" {
+		log.Info("Loading ClustermeshApiserver CA from file")
+		err = clustermeshApiserverCA.LoadFromFile(option.Config.ClustermeshApiserverCACertFile, option.Config.ClustermeshApiserverCAKeyFile)
+		if err != nil {
+			return fmt.Errorf("failed to load ClustermeshApiserver CA from file: %w", err)
 		}
 	}
 
@@ -323,10 +350,19 @@ func generateCertificates() error {
 		}
 	}
 
-	// Store after all the requested certs have been succesfully generated
+	// Store after all the requested certs have been successfully generated
 	count := 0
 
-	if option.Config.HubbleCAGenerate {
+	if option.Config.HubbleCAGenerate && !hubbleCA.LoadedFromSecret() {
+		ctx, cancel := context.WithTimeout(context.Background(), option.Config.K8sRequestTimeout)
+		defer cancel()
+		if err := hubbleCA.StoreAsSecret(ctx, k8sClient); err != nil {
+			return fmt.Errorf("failed to create secret for Hubble CA: %w", err)
+		}
+		count++
+	}
+
+	if option.Config.HubbleCAConfigMapCreate {
 		ctx, cancel := context.WithTimeout(context.Background(), option.Config.K8sRequestTimeout)
 		defer cancel()
 		if err := hubbleCA.StoreAsConfigMap(ctx, k8sClient); err != nil {
@@ -362,7 +398,7 @@ func generateCertificates() error {
 		count++
 	}
 
-	if option.Config.ClustermeshApiserverCACertGenerate && !haveCASecret {
+	if option.Config.ClustermeshApiserverCACertGenerate && !clustermeshApiserverCA.LoadedFromSecret() {
 		ctx, cancel := context.WithTimeout(context.Background(), option.Config.K8sRequestTimeout)
 		defer cancel()
 		if err := clustermeshApiserverCA.StoreAsSecret(ctx, k8sClient); err != nil {

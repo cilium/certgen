@@ -189,21 +189,26 @@ func (c *Cert) StoreAsSecretWithCACert(ctx context.Context, k8sClient *kubernete
 
 // CA contains the data and metadata of the certificate authority
 type CA struct {
-	Name      string
-	Namespace string
+	SecretName      string
+	SecretNamespace string
+
+	ConfigMapName      string
+	ConfigMapNamespace string
 
 	CACertBytes []byte
 	CAKeyBytes  []byte
 
 	CACert *x509.Certificate
 	CAKey  crypto.Signer
+
+	loadedFromSecret bool
 }
 
 // NewCA creates a new root CA blueprint
-func NewCA(name, namespace string) *CA {
+func NewCA(secretName, secretNamespace string) *CA {
 	return &CA{
-		Name:      name,
-		Namespace: namespace,
+		SecretName:      secretName,
+		SecretNamespace: secretNamespace,
 	}
 }
 
@@ -222,6 +227,11 @@ func (c *CA) loadKeyPair() error {
 	c.CACert = caCert
 	c.CAKey = caKey
 	return nil
+}
+
+// LoadedFromSecret returns true if this CA was loaded from a K8s secret
+func (c *CA) LoadedFromSecret() bool {
+	return c.loadedFromSecret
 }
 
 // Generate the root certificate and keyfile. Populates c.CACertBytes and c.CAKeyBytes
@@ -245,6 +255,7 @@ func (c *CA) Generate(commonName string, validityDuration time.Duration) error {
 
 	c.CACertBytes = caCertBytes
 	c.CAKeyBytes = caKeyBytes
+	c.loadedFromSecret = false
 	return c.loadKeyPair()
 }
 
@@ -266,6 +277,7 @@ func (c *CA) LoadFromFile(caCertFile, caKeyFile string) error {
 
 	c.CACertBytes = caCertBytes
 	c.CAKeyBytes = caKeyBytes
+	c.loadedFromSecret = false
 	return c.loadKeyPair()
 }
 
@@ -273,25 +285,25 @@ func (c *CA) LoadFromFile(caCertFile, caKeyFile string) error {
 func (c *CA) StoreAsConfigMap(ctx context.Context, k8sClient *kubernetes.Clientset) error {
 	if c.CACertBytes == nil || c.CAKeyBytes == nil {
 		return fmt.Errorf("cannot create configmap %s/%s from empty certificate",
-			c.Namespace, c.Name)
+			c.ConfigMapNamespace, c.ConfigMapName)
 	}
 
 	log.WithFields(logrus.Fields{
-		logfields.K8sConfigMapNamespace: c.Namespace,
-		logfields.K8sConfigMapName:      c.Name,
+		logfields.K8sConfigMapNamespace: c.ConfigMapNamespace,
+		logfields.K8sConfigMapName:      c.ConfigMapName,
 	}).Info("Creating K8s ConfigMap")
 
 	configMap := &v1.ConfigMap{
 		ObjectMeta: meta_v1.ObjectMeta{
-			Name:      c.Name,
-			Namespace: c.Namespace,
+			Name:      c.ConfigMapName,
+			Namespace: c.ConfigMapNamespace,
 		},
 		BinaryData: map[string][]byte{
 			"ca.crt": c.CACertBytes,
 		},
 	}
 
-	k8sConfigMaps := k8sClient.CoreV1().ConfigMaps(c.Namespace)
+	k8sConfigMaps := k8sClient.CoreV1().ConfigMaps(c.ConfigMapNamespace)
 	_, err := k8sConfigMaps.Create(ctx, configMap, meta_v1.CreateOptions{})
 	if k8sErrors.IsAlreadyExists(err) {
 		_, err = k8sConfigMaps.Update(ctx, configMap, meta_v1.UpdateOptions{})
@@ -303,18 +315,18 @@ func (c *CA) StoreAsConfigMap(ctx context.Context, k8sClient *kubernetes.Clients
 func (c *CA) StoreAsSecret(ctx context.Context, k8sClient *kubernetes.Clientset) error {
 	if c.CACertBytes == nil || c.CAKeyBytes == nil {
 		return fmt.Errorf("cannot create secret %s/%s from empty certificate",
-			c.Namespace, c.Name)
+			c.SecretNamespace, c.SecretName)
 	}
 
 	log.WithFields(logrus.Fields{
-		logfields.K8sSecretNamespace: c.Namespace,
-		logfields.K8sSecretName:      c.Name,
+		logfields.K8sSecretNamespace: c.SecretNamespace,
+		logfields.K8sSecretName:      c.SecretName,
 	}).Info("Creating K8s Secret")
 
 	secret := &v1.Secret{
 		ObjectMeta: meta_v1.ObjectMeta{
-			Name:      c.Name,
-			Namespace: c.Namespace,
+			Name:      c.SecretName,
+			Namespace: c.SecretNamespace,
 		},
 		Data: map[string][]byte{
 			"ca.crt": c.CACertBytes,
@@ -322,7 +334,7 @@ func (c *CA) StoreAsSecret(ctx context.Context, k8sClient *kubernetes.Clientset)
 		},
 	}
 
-	k8sSecrets := k8sClient.CoreV1().Secrets(c.Namespace)
+	k8sSecrets := k8sClient.CoreV1().Secrets(c.SecretNamespace)
 	_, err := k8sSecrets.Create(ctx, secret, meta_v1.CreateOptions{})
 	if k8sErrors.IsAlreadyExists(err) {
 		_, err = k8sSecrets.Update(ctx, secret, meta_v1.UpdateOptions{})
@@ -332,22 +344,27 @@ func (c *CA) StoreAsSecret(ctx context.Context, k8sClient *kubernetes.Clientset)
 
 // LoadFromSecret populates c.CACertBytes and c.CAKeyBytes by reading them from a secret
 func (c *CA) LoadFromSecret(ctx context.Context, k8sClient *kubernetes.Clientset) error {
-	k8sSecrets := k8sClient.CoreV1().Secrets(c.Namespace)
-	secret, err := k8sSecrets.Get(ctx, c.Name, meta_v1.GetOptions{})
+	k8sSecrets := k8sClient.CoreV1().Secrets(c.SecretNamespace)
+	secret, err := k8sSecrets.Get(ctx, c.SecretName, meta_v1.GetOptions{})
 	if err != nil {
 		return err
 	}
 
 	if len(secret.Data["ca.crt"]) == 0 {
-		return fmt.Errorf("Secret %s/%s has no CA cert", c.Namespace, c.Name)
+		return fmt.Errorf("Secret %s/%s has no CA cert", c.SecretNamespace, c.SecretName)
 	}
 
 	if len(secret.Data["ca.key"]) == 0 {
-		return fmt.Errorf("Secret %s/%s has no CA key", c.Namespace, c.Name)
+		return fmt.Errorf("Secret %s/%s has no CA key", c.SecretNamespace, c.SecretName)
 	}
 
 	c.CACertBytes = secret.Data["ca.crt"]
 	c.CAKeyBytes = secret.Data["ca.key"]
 
-	return c.loadKeyPair()
+	if err := c.loadKeyPair(); err != nil {
+		return err
+	}
+
+	c.loadedFromSecret = true
+	return nil
 }

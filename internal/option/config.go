@@ -30,9 +30,14 @@ const (
 	HubbleCACertFile = "hubble-ca-cert-file"
 	HubbleCAKeyFile  = "hubble-ca-key-file"
 
-	HubbleCAGenerate           = "hubble-ca-generate"
-	HubbleCACommonName         = "hubble-ca-common-name"
-	HubbleCAValidityDuration   = "hubble-ca-validity-duration"
+	HubbleCAGenerate         = "hubble-ca-generate"
+	HubbleCAReuseSecret      = "hubble-ca-reuse-secret"
+	HubbleCACommonName       = "hubble-ca-common-name"
+	HubbleCAValidityDuration = "hubble-ca-validity-duration"
+	HubbleCASecretName       = "hubble-ca-secret-name"
+	HubbleCASecretNamespace  = "hubble-ca-secret-namespace"
+
+	HubbleCAConfigMapCreate    = "hubble-ca-config-map-create"
 	HubbleCAConfigMapName      = "hubble-ca-config-map-name"
 	HubbleCAConfigMapNamespace = "hubble-ca-config-map-namespace"
 
@@ -60,6 +65,7 @@ const (
 	ClustermeshApiserverCAKeyFile  = "clustermesh-apiserver-ca-key-file"
 
 	ClustermeshApiserverCACertGenerate         = "clustermesh-apiserver-ca-cert-generate"
+	ClustermeshApiserverCACertReuseSecret      = "clustermesh-apiserver-ca-cert-reuse-secret"
 	ClustermeshApiserverCACertCommonName       = "clustermesh-apiserver-ca-cert-common-name"
 	ClustermeshApiserverCACertValidityDuration = "clustermesh-apiserver-ca-cert-validity-duration"
 	ClustermeshApiserverCACertSecretName       = "clustermesh-apiserver-ca-cert-secret-name"
@@ -105,12 +111,23 @@ type CertGenConfig struct {
 	// HubbleCAKeyFile is the path to the Hubble CA key PEM (if HubbleCAGenerate is false)
 	HubbleCAKeyFile string
 
-	// HubbleCAGenerate can be set to true to generate and store a new Hubble CA
+	// HubbleCAGenerate can be set to true to generate a new Hubble CA secret.
+	// If HubbleCAReuseSecret is true, then a new CA secret only is created if existing one is not found.
 	HubbleCAGenerate bool
+	// HubbleCAReuseSecret can be set to true to store and load the Hubble CA from the secret if
+	// it exists. Delete the old Secret to force regeneration.
+	HubbleCAReuseSecret bool
 	// HubbleCACommonName is the CN of the Hubble CA
 	HubbleCACommonName string
 	// HubbleCAValidityDuration of certificate
 	HubbleCAValidityDuration time.Duration
+	// HubbleCASecretName where the Hubble CA cert and key will be stored
+	HubbleCASecretName string
+	// HubbleCASecretNamespace where the Hubble CA cert and key will be stored
+	HubbleCASecretNamespace string
+
+	// HubbleCAConfigMapCreate can be enabled to store the Hubble CA cert in a ConfigMap
+	HubbleCAConfigMapCreate bool
 	// HubbleCAConfigMapName where the Hubble CA cert will be stored
 	HubbleCAConfigMapName string
 	// HubbleCAConfigMapNamespace where the Hubble CA cert will be stored
@@ -158,8 +175,11 @@ type CertGenConfig struct {
 	ClustermeshApiserverCAKeyFile string
 
 	// ClustermeshApiserverCACertGenerate can be set to true to generate and store a new ClustermeshApiserver CA secret.
-	// New CA secret is created if existing one is not found. Delete the old ConfigMap to force regeneration.
+	// If ClustermeshApiserverCAReuseSecret is true, then a new CA secret only is created if existing one is not found.
 	ClustermeshApiserverCACertGenerate bool
+	// ClustermeshApiserverCAReuseSecret can be set to true to load the ClustermeshApiserver CA from the secret if
+	// it exists. Delete the old Secret to force regeneration.
+	ClustermeshApiserverCAReuseSecret bool
 	// ClustermeshApiserverCACertCommonName is the CN of the ClustermeshApiserver CA
 	ClustermeshApiserverCACertCommonName string
 	// ClustermeshApiserverCACertValidityDuration of certificate
@@ -228,8 +248,13 @@ func (c *CertGenConfig) PopulateFrom(vp *viper.Viper) {
 	c.HubbleCAKeyFile = vp.GetString(HubbleCAKeyFile)
 
 	c.HubbleCAGenerate = vp.GetBool(HubbleCAGenerate)
+	c.HubbleCAReuseSecret = vp.GetBool(HubbleCAReuseSecret)
 	c.HubbleCACommonName = vp.GetString(HubbleCACommonName)
 	c.HubbleCAValidityDuration = vp.GetDuration(HubbleCAValidityDuration)
+	c.HubbleCASecretName = vp.GetString(HubbleCASecretName)
+	c.HubbleCASecretNamespace = getStringWithFallback(vp, HubbleCASecretNamespace, CiliumNamespace)
+
+	c.HubbleCAConfigMapCreate = vp.GetBool(HubbleCAConfigMapCreate)
 	c.HubbleCAConfigMapName = vp.GetString(HubbleCAConfigMapName)
 	c.HubbleCAConfigMapNamespace = getStringWithFallback(vp, HubbleCAConfigMapNamespace, CiliumNamespace)
 
@@ -257,6 +282,7 @@ func (c *CertGenConfig) PopulateFrom(vp *viper.Viper) {
 	c.ClustermeshApiserverCAKeyFile = vp.GetString(ClustermeshApiserverCAKeyFile)
 
 	c.ClustermeshApiserverCACertGenerate = vp.GetBool(ClustermeshApiserverCACertGenerate)
+	c.ClustermeshApiserverCAReuseSecret = vp.GetBool(ClustermeshApiserverCACertReuseSecret)
 	c.ClustermeshApiserverCACertCommonName = vp.GetString(ClustermeshApiserverCACertCommonName)
 	c.ClustermeshApiserverCACertValidityDuration = vp.GetDuration(ClustermeshApiserverCACertValidityDuration)
 	c.ClustermeshApiserverCACertSecretName = vp.GetString(ClustermeshApiserverCACertSecretName)
