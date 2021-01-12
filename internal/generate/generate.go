@@ -154,39 +154,6 @@ func (c *Cert) StoreAsSecret(ctx context.Context, k8sClient *kubernetes.Clientse
 	return err
 }
 
-// StoreAsSecretWithCACert creates or updates the certificate, keyfile, and ca cert in a K8s secret
-func (c *Cert) StoreAsSecretWithCACert(ctx context.Context, k8sClient *kubernetes.Clientset, ca *CA) error {
-	if c.CertBytes == nil || c.KeyBytes == nil || ca.CACertBytes == nil {
-		return fmt.Errorf("cannot create secret %s/%s from empty certificate",
-			c.Namespace, c.Name)
-	}
-
-	log.WithFields(logrus.Fields{
-		logfields.K8sSecretNamespace: c.Namespace,
-		logfields.K8sSecretName:      c.Name,
-	}).Info("Creating K8s Secret")
-
-	secret := &v1.Secret{
-		ObjectMeta: meta_v1.ObjectMeta{
-			Name:      c.Name,
-			Namespace: c.Namespace,
-		},
-		Data: map[string][]byte{
-			"tls.crt": c.CertBytes,
-			"tls.key": c.KeyBytes,
-			"ca.crt":  ca.CACertBytes,
-		},
-		Type: v1.SecretTypeTLS,
-	}
-
-	k8sSecrets := k8sClient.CoreV1().Secrets(c.Namespace)
-	_, err := k8sSecrets.Create(ctx, secret, meta_v1.CreateOptions{})
-	if k8sErrors.IsAlreadyExists(err) {
-		_, err = k8sSecrets.Update(ctx, secret, meta_v1.UpdateOptions{})
-	}
-	return err
-}
-
 // CA contains the data and metadata of the certificate authority
 type CA struct {
 	SecretName      string
