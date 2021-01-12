@@ -129,10 +129,11 @@ func (c *Cert) StoreAsSecret(ctx context.Context, k8sClient *kubernetes.Clientse
 			c.Namespace, c.Name)
 	}
 
-	log.WithFields(logrus.Fields{
+	scopedLog := log.WithFields(logrus.Fields{
 		logfields.K8sSecretNamespace: c.Namespace,
 		logfields.K8sSecretName:      c.Name,
-	}).Info("Creating K8s Secret")
+	})
+	scopedLog.Info("Creating K8s Secret")
 
 	secret := &v1.Secret{
 		ObjectMeta: meta_v1.ObjectMeta{
@@ -149,6 +150,7 @@ func (c *Cert) StoreAsSecret(ctx context.Context, k8sClient *kubernetes.Clientse
 	k8sSecrets := k8sClient.CoreV1().Secrets(c.Namespace)
 	_, err := k8sSecrets.Create(ctx, secret, meta_v1.CreateOptions{})
 	if k8sErrors.IsAlreadyExists(err) {
+		scopedLog.Info("Secret already exists, updating it instead")
 		_, err = k8sSecrets.Update(ctx, secret, meta_v1.UpdateOptions{})
 	}
 	return err
@@ -255,10 +257,11 @@ func (c *CA) StoreAsConfigMap(ctx context.Context, k8sClient *kubernetes.Clients
 			c.ConfigMapNamespace, c.ConfigMapName)
 	}
 
-	log.WithFields(logrus.Fields{
+	scopedLog := log.WithFields(logrus.Fields{
 		logfields.K8sConfigMapNamespace: c.ConfigMapNamespace,
 		logfields.K8sConfigMapName:      c.ConfigMapName,
-	}).Info("Creating K8s ConfigMap")
+	})
+	scopedLog.Info("Creating K8s ConfigMap")
 
 	configMap := &v1.ConfigMap{
 		ObjectMeta: meta_v1.ObjectMeta{
@@ -273,6 +276,7 @@ func (c *CA) StoreAsConfigMap(ctx context.Context, k8sClient *kubernetes.Clients
 	k8sConfigMaps := k8sClient.CoreV1().ConfigMaps(c.ConfigMapNamespace)
 	_, err := k8sConfigMaps.Create(ctx, configMap, meta_v1.CreateOptions{})
 	if k8sErrors.IsAlreadyExists(err) {
+		scopedLog.Info("ConfigMap already exists, updating it instead")
 		_, err = k8sConfigMaps.Update(ctx, configMap, meta_v1.UpdateOptions{})
 	}
 	return err
@@ -285,10 +289,11 @@ func (c *CA) StoreAsSecret(ctx context.Context, k8sClient *kubernetes.Clientset)
 			c.SecretNamespace, c.SecretName)
 	}
 
-	log.WithFields(logrus.Fields{
+	scopedLog := log.WithFields(logrus.Fields{
 		logfields.K8sSecretNamespace: c.SecretNamespace,
 		logfields.K8sSecretName:      c.SecretName,
-	}).Info("Creating K8s Secret")
+	})
+	scopedLog.Info("Creating K8s Secret")
 
 	secret := &v1.Secret{
 		ObjectMeta: meta_v1.ObjectMeta{
@@ -304,6 +309,7 @@ func (c *CA) StoreAsSecret(ctx context.Context, k8sClient *kubernetes.Clientset)
 	k8sSecrets := k8sClient.CoreV1().Secrets(c.SecretNamespace)
 	_, err := k8sSecrets.Create(ctx, secret, meta_v1.CreateOptions{})
 	if k8sErrors.IsAlreadyExists(err) {
+		scopedLog.Info("Secret already exists, updating it instead")
 		_, err = k8sSecrets.Update(ctx, secret, meta_v1.UpdateOptions{})
 	}
 	return err
