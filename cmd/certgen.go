@@ -217,7 +217,7 @@ func generateCertificates() error {
 			option.Config.HubbleServerCertSecretName,
 			option.Config.HubbleServerCertSecretNamespace,
 		)
-		err := hubbleServerCert.Generate(hubbleCA.CACert, hubbleCA.CAKey)
+		err := hubbleServerCert.Generate(hubbleCA)
 		if err != nil {
 			return fmt.Errorf("failed to generate Hubble server cert: %w", err)
 		}
@@ -233,7 +233,7 @@ func generateCertificates() error {
 			option.Config.HubbleRelayClientCertSecretName,
 			option.Config.HubbleRelayClientCertSecretNamespace,
 		)
-		err := hubbleRelayClientCert.Generate(hubbleCA.CACert, hubbleCA.CAKey)
+		err := hubbleRelayClientCert.Generate(hubbleCA)
 		if err != nil {
 			return fmt.Errorf("failed to generate Hubble Relay client cert: %w", err)
 		}
@@ -249,7 +249,7 @@ func generateCertificates() error {
 			option.Config.HubbleRelayServerCertSecretName,
 			option.Config.HubbleRelayServerCertSecretNamespace,
 		)
-		err := hubbleRelayServerCert.Generate(hubbleCA.CACert, hubbleCA.CAKey)
+		err := hubbleRelayServerCert.Generate(hubbleCA)
 		if err != nil {
 			return fmt.Errorf("failed to generate Hubble Relay server cert: %w", err)
 		}
@@ -296,7 +296,7 @@ func generateCertificates() error {
 			option.Config.ClustermeshApiserverServerCertSecretName,
 			option.Config.CiliumNamespace,
 		).WithHosts([]string{option.Config.ClustermeshApiserverServerCertCommonName, "127.0.0.1"})
-		err = clustermeshApiserverServerCert.Generate(clustermeshApiserverCA.CACert, clustermeshApiserverCA.CAKey)
+		err = clustermeshApiserverServerCert.Generate(clustermeshApiserverCA)
 		if err != nil {
 			return fmt.Errorf("failed to generate ClustermeshApiserver server cert: %w", err)
 		}
@@ -312,7 +312,7 @@ func generateCertificates() error {
 			option.Config.ClustermeshApiserverAdminCertSecretName,
 			option.Config.CiliumNamespace,
 		).WithHosts([]string{"localhost"})
-		err = clustermeshApiserverAdminCert.Generate(clustermeshApiserverCA.CACert, clustermeshApiserverCA.CAKey)
+		err = clustermeshApiserverAdminCert.Generate(clustermeshApiserverCA)
 		if err != nil {
 			return fmt.Errorf("failed to generate ClustermeshApiserver admin cert: %w", err)
 		}
@@ -328,7 +328,7 @@ func generateCertificates() error {
 			option.Config.ClustermeshApiserverClientCertSecretName,
 			option.Config.CiliumNamespace,
 		)
-		err = clustermeshApiserverClientCert.Generate(clustermeshApiserverCA.CACert, clustermeshApiserverCA.CAKey)
+		err = clustermeshApiserverClientCert.Generate(clustermeshApiserverCA)
 		if err != nil {
 			return fmt.Errorf("failed to generate ClustermeshApiserver client cert: %w", err)
 		}
@@ -344,7 +344,7 @@ func generateCertificates() error {
 			option.Config.ClustermeshApiserverRemoteCertSecretName,
 			option.Config.CiliumNamespace,
 		)
-		err = clustermeshApiserverRemoteCert.Generate(clustermeshApiserverCA.CACert, clustermeshApiserverCA.CAKey)
+		err = clustermeshApiserverRemoteCert.Generate(clustermeshApiserverCA)
 		if err != nil {
 			return fmt.Errorf("failed to generate ClustermeshApiserver remote cert: %w", err)
 		}

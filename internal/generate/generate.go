@@ -81,7 +81,7 @@ func (c *Cert) WithHosts(hosts []string) *Cert {
 }
 
 // Generate the certificate and keyfile and populate c.CertBytes and c.CertKey
-func (c *Cert) Generate(ca *x509.Certificate, caSigner crypto.Signer) error {
+func (c *Cert) Generate(ca *CA) error {
 	log.WithFields(logrus.Fields{
 		logfields.CertCommonName:       c.CommonName,
 		logfields.CertValidityDuration: c.ValidityDuration,
@@ -106,7 +106,8 @@ func (c *Cert) Generate(ca *x509.Certificate, caSigner crypto.Signer) error {
 			Expiry: c.ValidityDuration,
 		},
 	}
-	s, err := local.NewSigner(caSigner, ca, signer.DefaultSigAlgo(caSigner), policy)
+	caCert, caSigner := ca.CACert, ca.CAKey
+	s, err := local.NewSigner(caSigner, caCert, signer.DefaultSigAlgo(caSigner), policy)
 	if err != nil {
 		return err
 	}
