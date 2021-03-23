@@ -52,6 +52,7 @@ type Cert struct {
 	Namespace        string
 	Hosts            []string
 
+	CA        *CA
 	CertBytes []byte
 	KeyBytes  []byte
 }
@@ -118,6 +119,7 @@ func (c *Cert) Generate(ca *CA) error {
 		return err
 	}
 
+	c.CA = ca
 	c.CertBytes = certBytes
 	c.KeyBytes = keyBytes
 	return nil
@@ -142,6 +144,7 @@ func (c *Cert) StoreAsSecret(ctx context.Context, k8sClient *kubernetes.Clientse
 			Namespace: c.Namespace,
 		},
 		Data: map[string][]byte{
+			"ca.crt":  c.CA.CACertBytes,
 			"tls.crt": c.CertBytes,
 			"tls.key": c.KeyBytes,
 		},
