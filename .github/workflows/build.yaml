@@ -21,9 +21,13 @@ jobs:
         run: |
           go fmt ./...
           go vet ./...
+          git diff --exit-code
+      - name: Go mod check
+        working-directory: src/github.com/cilium/certgen
+        run: |
           go mod tidy
           go mod vendor
-          git diff --exit-code
+          test -z "$(git status --porcelain)" || (echo "please run 'go mod tidy && go mod vendor', and submit your changes"; exit 1)
       - name: Build
         working-directory: src/github.com/cilium/certgen
         run: |
