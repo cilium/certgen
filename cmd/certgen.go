@@ -117,6 +117,7 @@ func New() *cobra.Command {
 	flags.String(option.ClustermeshApiserverServerCertCommonName, defaults.ClustermeshApiserverServerCertCommonName, "clustermesh-apiserver server certificate common name")
 	flags.Duration(option.ClustermeshApiserverServerCertValidityDuration, defaults.ClustermeshApiserverServerCertValidityDuration, "clustermesh-apiserver server certificate validity duration")
 	flags.String(option.ClustermeshApiserverServerCertSecretName, defaults.ClustermeshApiserverServerCertSecretName, "Name of the K8s Secret where the clustermesh-apiserver server cert and key are stored in")
+	flags.StringSlice(option.ClustermeshApiserverServerCertSANs, defaults.ClustermeshApiserverServerCertSANs, "clustermesh-apiserver server certificate SANs")
 
 	flags.Bool(option.ClustermeshApiserverAdminCertGenerate, defaults.ClustermeshApiserverAdminCertGenerate, "Generate and store clustermesh-apiserver admin certificate")
 	flags.String(option.ClustermeshApiserverAdminCertCommonName, defaults.ClustermeshApiserverAdminCertCommonName, "clustermesh-apiserver admin certificate common name")
@@ -295,7 +296,12 @@ func generateCertificates() error {
 			defaults.ClustermeshApiserverCertUsage,
 			option.Config.ClustermeshApiserverServerCertSecretName,
 			option.Config.CiliumNamespace,
-		).WithHosts([]string{option.Config.ClustermeshApiserverServerCertCommonName, "127.0.0.1"})
+		).WithHosts(
+			append([]string{
+				option.Config.ClustermeshApiserverServerCertCommonName,
+				"127.0.0.1",
+			}, option.Config.ClustermeshApiserverServerCertSANs...),
+		)
 		err = clustermeshApiserverServerCert.Generate(clustermeshApiserverCA)
 		if err != nil {
 			return fmt.Errorf("failed to generate ClustermeshApiserver server cert: %w", err)

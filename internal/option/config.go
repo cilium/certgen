@@ -74,6 +74,7 @@ const (
 	ClustermeshApiserverServerCertCommonName       = "clustermesh-apiserver-server-cert-common-name"
 	ClustermeshApiserverServerCertValidityDuration = "clustermesh-apiserver-server-cert-validity-duration"
 	ClustermeshApiserverServerCertSecretName       = "clustermesh-apiserver-server-cert-secret-name"
+	ClustermeshApiserverServerCertSANs             = "clustermesh-apiserver-server-cert-sans"
 
 	ClustermeshApiserverAdminCertGenerate         = "clustermesh-apiserver-admin-cert-generate"
 	ClustermeshApiserverAdminCertCommonName       = "clustermesh-apiserver-admin-cert-common-name"
@@ -196,6 +197,8 @@ type CertGenConfig struct {
 	ClustermeshApiserverServerCertValidityDuration time.Duration
 	// ClustermeshApiserverServerCertSecretName where the ClustermeshApiserver server cert and key will be stored
 	ClustermeshApiserverServerCertSecretName string
+	// ClustermeshApiserverServerCertSANs is the list of SANs to add to the clustermesh-apiserver server certificate.
+	ClustermeshApiserverServerCertSANs []string
 
 	// ClustermeshApiserverAdminCertGenerate can be set to true to generate and store a new ClustermeshApiserver admin secret.
 	// If true then any existing secret is overwritten with a new one.
@@ -291,6 +294,7 @@ func (c *CertGenConfig) PopulateFrom(vp *viper.Viper) {
 	c.ClustermeshApiserverServerCertCommonName = vp.GetString(ClustermeshApiserverServerCertCommonName)
 	c.ClustermeshApiserverServerCertValidityDuration = vp.GetDuration(ClustermeshApiserverServerCertValidityDuration)
 	c.ClustermeshApiserverServerCertSecretName = vp.GetString(ClustermeshApiserverServerCertSecretName)
+	c.ClustermeshApiserverServerCertSANs = vp.GetStringSlice(ClustermeshApiserverServerCertSANs)
 
 	c.ClustermeshApiserverAdminCertGenerate = vp.GetBool(ClustermeshApiserverAdminCertGenerate)
 	c.ClustermeshApiserverAdminCertCommonName = vp.GetString(ClustermeshApiserverAdminCertCommonName)
