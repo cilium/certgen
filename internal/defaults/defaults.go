@@ -80,4 +80,6 @@ var (
 	HubbleRelayClientCertUsage = []string{"signing", "key encipherment", "server auth", "client auth"}
 
 	ClustermeshApiserverCertUsage = []string{"signing", "key encipherment", "server auth", "client auth"}
+
+	ClustermeshApiserverServerCertSANs = []string{"*.mesh.cilium.io"}
 )
