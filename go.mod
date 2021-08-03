@@ -3,7 +3,7 @@ module github.com/cilium/certgen
 go 1.16
 
 require (
-	github.com/cloudflare/cfssl v1.4.1
+	github.com/cloudflare/cfssl v1.6.0
 	github.com/sirupsen/logrus v1.8.1
 	github.com/spf13/cobra v1.0.0
 	github.com/spf13/viper v1.8.1
