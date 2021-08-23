@@ -27,5 +27,5 @@ Example:
 
     git push origin v0.1.4
 
-Once tagged, the release will be built automatically on both quay.io and
-docker.io.
+Once tagged, the release will be built automatically and pushed to both quay.io
+and docker.io via GitHub actions.
