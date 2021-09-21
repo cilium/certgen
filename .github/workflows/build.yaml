@@ -16,11 +16,10 @@ jobs:
         uses: actions/checkout@v2
         with:
           path: src/github.com/cilium/certgen
-      - name: Lint
+      - name: Formatting check
         working-directory: src/github.com/cilium/certgen
         run: |
           go fmt ./...
-          go vet ./...
           git diff --exit-code
       - name: Go mod check
         working-directory: src/github.com/cilium/certgen
