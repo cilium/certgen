@@ -69,19 +69,15 @@ func New() *cobra.Command {
 	flags.String(option.K8sKubeConfigPath, "", "Path to the K8s kubeconfig file. If absent, the in-cluster config is used.")
 	flags.Duration(option.K8sRequestTimeout, defaults.K8sRequestTimeout, "Timeout for K8s API requests")
 
-	flags.String(option.HubbleCACertFile, "", "Path to provided Hubble CA certificate file (required if Hubble CA is not generated)")
-	flags.String(option.HubbleCAKeyFile, "", "Path to provided Hubble CA key file (required if Hubble CA is not generated)")
+	flags.String(option.CACertFile, "", "Path to provided Cilium CA certificate file (required if Cilium CA is not generated)")
+	flags.String(option.CAKeyFile, "", "Path to provided Cilium CA key file (required if Cilium CA is not generated)")
 
-	flags.Bool(option.HubbleCAGenerate, defaults.HubbleCAGenerate, "Generate and store Hubble CA certificate")
-	flags.Bool(option.HubbleCAReuseSecret, defaults.HubbleCAReuseSecret, "Reuse the Hubble CA secret if it exists, otherwise generate a new one")
-	flags.String(option.HubbleCACommonName, defaults.HubbleCACommonName, "Hubble CA common name")
-	flags.Duration(option.HubbleCAValidityDuration, defaults.HubbleCAValidityDuration, "Hubble CA validity duration")
-	flags.String(option.HubbleCASecretName, defaults.HubbleCASecretName, "Name of the K8s Secret where the Hubble CA cert and key are stored in")
-	flags.String(option.HubbleCASecretNamespace, "", "Overwrites the namespace of the K8s Secret where the Hubble CA cert and key are stored in")
-
-	flags.Bool(option.HubbleCAConfigMapCreate, defaults.HubbleCAConfigMapCreate, "Store the Hubble CA cert additionally in a K8s ConfigMap")
-	flags.String(option.HubbleCAConfigMapName, defaults.HubbleCAConfigMapName, "Name of the K8s ConfigMap where the Hubble CA cert is stored in")
-	flags.String(option.HubbleCAConfigMapNamespace, "", "Overwrites the namespace of the ConfigMap where the Hubble CA cert is stored in")
+	flags.Bool(option.CAGenerate, defaults.CAGenerate, "Generate and store Cilium CA certificate")
+	flags.Bool(option.CAReuseSecret, defaults.CAReuseSecret, "Reuse the Cilium CA secret if it exists, otherwise generate a new one")
+	flags.String(option.CACommonName, defaults.CACommonName, "Cilium CA common name")
+	flags.Duration(option.CAValidityDuration, defaults.CAValidityDuration, "Cilium CA validity duration")
+	flags.String(option.CASecretName, defaults.CASecretName, "Name of the K8s Secret where the Cilium CA cert and key are stored in")
+	flags.String(option.CASecretNamespace, "", "Overwrites the namespace of the K8s Secret where the Cilium CA cert and key are stored in")
 
 	flags.Bool(option.HubbleRelayClientCertGenerate, defaults.HubbleRelayClientCertGenerate, "Generate and store Hubble Relay client certificate")
 	flags.String(option.HubbleRelayClientCertCommonName, defaults.HubbleRelayClientCertCommonName, "Hubble Relay client certificate common name")
@@ -103,15 +99,6 @@ func New() *cobra.Command {
 
 	// Extenal Workload certs
 	flags.String(option.CiliumNamespace, defaults.CiliumNamespace, "Namespace where the cert secrets and configmaps are stored in")
-
-	flags.String(option.ClustermeshApiserverCACertFile, "", "Path to provided clustermesh-apiserver CA certificate file (required if CA does not exist and is not to be generated)")
-	flags.String(option.ClustermeshApiserverCAKeyFile, "", "Path to provided clustermesh-apiserver CA key file (required if CA does not exist and is not to be generated)")
-
-	flags.Bool(option.ClustermeshApiserverCACertGenerate, defaults.ClustermeshApiserverCACertGenerate, "Generate and store clustermesh-apiserver CA certificate")
-	flags.Bool(option.ClustermeshApiserverCACertReuseSecret, defaults.ClustermeshApiserverCACertReuseSecret, "Reuse the clustermesh-apiserver CA secret if it exists, otherwise generate a new one")
-	flags.String(option.ClustermeshApiserverCACertCommonName, defaults.ClustermeshApiserverCACertCommonName, "clustermesh-apiserver CA certificate common name")
-	flags.Duration(option.ClustermeshApiserverCACertValidityDuration, defaults.ClustermeshApiserverCACertValidityDuration, "clustermesh-apiserver CA certificate validity duration")
-	flags.String(option.ClustermeshApiserverCACertSecretName, defaults.ClustermeshApiserverCACertSecretName, "Name of the K8s Secret where the clustermesh-apiserver CA cert is stored in")
 
 	flags.Bool(option.ClustermeshApiserverServerCertGenerate, defaults.ClustermeshApiserverServerCertGenerate, "Generate and store clustermesh-apiserver server certificate")
 	flags.String(option.ClustermeshApiserverServerCertCommonName, defaults.ClustermeshApiserverServerCertCommonName, "clustermesh-apiserver server certificate common name")
@@ -172,39 +159,36 @@ func generateCertificates() error {
 		return fmt.Errorf("failed initialize kubernetes client: %w", err)
 	}
 
-	hubbleCA := generate.NewCA(option.Config.HubbleCASecretName, option.Config.HubbleCASecretNamespace)
-	if option.Config.HubbleCAConfigMapCreate {
-		hubbleCA.ConfigMapName = option.Config.HubbleCAConfigMapName
-		hubbleCA.ConfigMapNamespace = option.Config.HubbleCAConfigMapNamespace
-	}
+	ciliumCA := generate.NewCA(option.Config.CASecretName, option.Config.CASecretNamespace)
 
-	if option.Config.HubbleCAReuseSecret {
+	if option.Config.CAReuseSecret {
 		// Read CA from Secret if it already exists
 		ctx, cancel := context.WithTimeout(context.Background(), option.Config.K8sRequestTimeout)
 		defer cancel()
-		err = hubbleCA.LoadFromSecret(ctx, k8sClient)
+		err = ciliumCA.LoadFromSecret(ctx, k8sClient)
 		if err != nil {
-			if k8sErrors.IsNotFound(err) && option.Config.HubbleCAGenerate {
-				log.Info("Hubble CA secret does not exist, generating new CA")
+			if k8sErrors.IsNotFound(err) && option.Config.CAGenerate {
+				log.Info("Cilium CA secret does not exist, generating new CA")
 			} else {
 				// Permission error or something like that
-				return fmt.Errorf("failed to load Hubble CA from secret: %w", err)
+				return fmt.Errorf("failed to load Cilium CA from secret: %w", err)
 			}
+		} else {
+			log.Info("Loaded Cilium CA Secret")
 		}
-		log.Info("Loaded Hubble CA Secret")
 	}
 
 	// Generate a CA only if we were not able to load it from secret
-	if option.Config.HubbleCAGenerate && !hubbleCA.LoadedFromSecret() {
-		err = hubbleCA.Generate(option.Config.HubbleCACommonName, option.Config.HubbleCAValidityDuration)
+	if option.Config.CAGenerate && !ciliumCA.LoadedFromSecret() {
+		err = ciliumCA.Generate(option.Config.CACommonName, option.Config.CAValidityDuration)
 		if err != nil {
-			return fmt.Errorf("failed to generate Hubble CA: %w", err)
+			return fmt.Errorf("failed to generate Cilium CA: %w", err)
 		}
-	} else if option.Config.HubbleCACertFile != "" && option.Config.HubbleCAKeyFile != "" {
-		log.Info("Loading Hubble CA from file")
-		err = hubbleCA.LoadFromFile(option.Config.HubbleCACertFile, option.Config.HubbleCAKeyFile)
+	} else if option.Config.CACertFile != "" && option.Config.CAKeyFile != "" {
+		log.Info("Loading Cilium CA from file")
+		err = ciliumCA.LoadFromFile(option.Config.CACertFile, option.Config.CAKeyFile)
 		if err != nil {
-			return fmt.Errorf("failed to load Hubble CA from file: %w", err)
+			return fmt.Errorf("failed to load Cilium CA from file: %w", err)
 		}
 	}
 
@@ -218,7 +202,7 @@ func generateCertificates() error {
 			option.Config.HubbleServerCertSecretName,
 			option.Config.HubbleServerCertSecretNamespace,
 		)
-		err := hubbleServerCert.Generate(hubbleCA)
+		err := hubbleServerCert.Generate(ciliumCA)
 		if err != nil {
 			return fmt.Errorf("failed to generate Hubble server cert: %w", err)
 		}
@@ -234,7 +218,7 @@ func generateCertificates() error {
 			option.Config.HubbleRelayClientCertSecretName,
 			option.Config.HubbleRelayClientCertSecretNamespace,
 		)
-		err := hubbleRelayClientCert.Generate(hubbleCA)
+		err := hubbleRelayClientCert.Generate(ciliumCA)
 		if err != nil {
 			return fmt.Errorf("failed to generate Hubble Relay client cert: %w", err)
 		}
@@ -250,40 +234,9 @@ func generateCertificates() error {
 			option.Config.HubbleRelayServerCertSecretName,
 			option.Config.HubbleRelayServerCertSecretNamespace,
 		)
-		err := hubbleRelayServerCert.Generate(hubbleCA)
+		err := hubbleRelayServerCert.Generate(ciliumCA)
 		if err != nil {
 			return fmt.Errorf("failed to generate Hubble Relay server cert: %w", err)
-		}
-	}
-
-	clustermeshApiserverCA := generate.NewCA(option.Config.ClustermeshApiserverCACertSecretName, option.Config.CiliumNamespace)
-	if option.Config.ClustermeshApiserverCAReuseSecret {
-		// Read CA from Secret if it already exists
-		ctx, cancel := context.WithTimeout(context.Background(), option.Config.K8sRequestTimeout)
-		defer cancel()
-		err = clustermeshApiserverCA.LoadFromSecret(ctx, k8sClient)
-		if err != nil {
-			if k8sErrors.IsNotFound(err) && option.Config.ClustermeshApiserverCACertGenerate {
-				log.Info("ClustermeshApiserver CA secret does not exist, generating new CA")
-			} else {
-				// Permission error or something like that
-				return fmt.Errorf("failed to load ClustermeshApiserver CA from secret: %w", err)
-			}
-		}
-		log.Info("Loaded ClustermeshApiserver CA Secret")
-	}
-
-	// Generate a CA only if we were not able to load it from secret
-	if option.Config.ClustermeshApiserverCACertGenerate && !clustermeshApiserverCA.LoadedFromSecret() {
-		err = clustermeshApiserverCA.Generate(option.Config.ClustermeshApiserverCACertCommonName, option.Config.ClustermeshApiserverCACertValidityDuration)
-		if err != nil {
-			return fmt.Errorf("failed to generate ClustermeshApiserver CA: %w", err)
-		}
-	} else if option.Config.ClustermeshApiserverCACertFile != "" && option.Config.ClustermeshApiserverCAKeyFile != "" {
-		log.Info("Loading ClustermeshApiserver CA from file")
-		err = clustermeshApiserverCA.LoadFromFile(option.Config.ClustermeshApiserverCACertFile, option.Config.ClustermeshApiserverCAKeyFile)
-		if err != nil {
-			return fmt.Errorf("failed to load ClustermeshApiserver CA from file: %w", err)
 		}
 	}
 
@@ -302,7 +255,7 @@ func generateCertificates() error {
 				"127.0.0.1",
 			}, option.Config.ClustermeshApiserverServerCertSANs...),
 		)
-		err = clustermeshApiserverServerCert.Generate(clustermeshApiserverCA)
+		err = clustermeshApiserverServerCert.Generate(ciliumCA)
 		if err != nil {
 			return fmt.Errorf("failed to generate ClustermeshApiserver server cert: %w", err)
 		}
@@ -318,7 +271,7 @@ func generateCertificates() error {
 			option.Config.ClustermeshApiserverAdminCertSecretName,
 			option.Config.CiliumNamespace,
 		).WithHosts([]string{"localhost"})
-		err = clustermeshApiserverAdminCert.Generate(clustermeshApiserverCA)
+		err = clustermeshApiserverAdminCert.Generate(ciliumCA)
 		if err != nil {
 			return fmt.Errorf("failed to generate ClustermeshApiserver admin cert: %w", err)
 		}
@@ -334,7 +287,7 @@ func generateCertificates() error {
 			option.Config.ClustermeshApiserverClientCertSecretName,
 			option.Config.CiliumNamespace,
 		)
-		err = clustermeshApiserverClientCert.Generate(clustermeshApiserverCA)
+		err = clustermeshApiserverClientCert.Generate(ciliumCA)
 		if err != nil {
 			return fmt.Errorf("failed to generate ClustermeshApiserver client cert: %w", err)
 		}
@@ -350,7 +303,7 @@ func generateCertificates() error {
 			option.Config.ClustermeshApiserverRemoteCertSecretName,
 			option.Config.CiliumNamespace,
 		)
-		err = clustermeshApiserverRemoteCert.Generate(clustermeshApiserverCA)
+		err = clustermeshApiserverRemoteCert.Generate(ciliumCA)
 		if err != nil {
 			return fmt.Errorf("failed to generate ClustermeshApiserver remote cert: %w", err)
 		}
@@ -359,20 +312,11 @@ func generateCertificates() error {
 	// Store after all the requested certs have been successfully generated
 	count := 0
 
-	if option.Config.HubbleCAGenerate && !hubbleCA.LoadedFromSecret() {
+	if option.Config.CAGenerate && !ciliumCA.LoadedFromSecret() {
 		ctx, cancel := context.WithTimeout(context.Background(), option.Config.K8sRequestTimeout)
 		defer cancel()
-		if err := hubbleCA.StoreAsSecret(ctx, k8sClient); err != nil {
-			return fmt.Errorf("failed to create secret for Hubble CA: %w", err)
-		}
-		count++
-	}
-
-	if option.Config.HubbleCAConfigMapCreate {
-		ctx, cancel := context.WithTimeout(context.Background(), option.Config.K8sRequestTimeout)
-		defer cancel()
-		if err := hubbleCA.StoreAsConfigMap(ctx, k8sClient); err != nil {
-			return fmt.Errorf("failed to create configmap for Hubble CA: %w", err)
+		if err := ciliumCA.StoreAsSecret(ctx, k8sClient); err != nil {
+			return fmt.Errorf("failed to create secret for Cilium CA: %w", err)
 		}
 		count++
 	}
@@ -400,15 +344,6 @@ func generateCertificates() error {
 		defer cancel()
 		if err := hubbleRelayServerCert.StoreAsSecret(ctx, k8sClient); err != nil {
 			return fmt.Errorf("failed to create secret for Hubble Relay server cert: %w", err)
-		}
-		count++
-	}
-
-	if option.Config.ClustermeshApiserverCACertGenerate && !clustermeshApiserverCA.LoadedFromSecret() {
-		ctx, cancel := context.WithTimeout(context.Background(), option.Config.K8sRequestTimeout)
-		defer cancel()
-		if err := clustermeshApiserverCA.StoreAsSecret(ctx, k8sClient); err != nil {
-			return fmt.Errorf("failed to create secret for ClustermeshApiserver CA: %w", err)
 		}
 		count++
 	}
