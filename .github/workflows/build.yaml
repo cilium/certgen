@@ -14,24 +14,18 @@ jobs:
           go-version: 1.17.1
       - name: Checkout code
         uses: actions/checkout@ec3a7ce113134d7a93b817d10a8272cb61118579
-        with:
-          path: src/github.com/cilium/certgen
       - name: Formatting check
-        working-directory: src/github.com/cilium/certgen
         run: |
           go fmt ./...
           git diff --exit-code
       - name: Go mod check
-        working-directory: src/github.com/cilium/certgen
         run: |
           go mod tidy
           go mod vendor
           test -z "$(git status --porcelain)" || (echo "please run 'go mod tidy && go mod vendor', and submit your changes"; exit 1)
       - name: Build
-        working-directory: src/github.com/cilium/certgen
         run: |
           go build ./...
       - name: Test
-        working-directory: src/github.com/cilium/certgen
         run: |
           go test ./...
