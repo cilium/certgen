@@ -43,7 +43,7 @@ var (
 	log = logging.DefaultLogger.WithField(logfields.LogSubsys, "generate")
 )
 
-// CA contains the data and metadata of the certificate and keyfile
+// Cert contains the data and metadata of the certificate and keyfile.
 type Cert struct {
 	CommonName       string
 	ValidityDuration time.Duration
@@ -165,9 +165,6 @@ type CA struct {
 	SecretName      string
 	SecretNamespace string
 
-	ConfigMapName      string
-	ConfigMapNamespace string
-
 	CACertBytes []byte
 	CAKeyBytes  []byte
 
@@ -253,38 +250,6 @@ func (c *CA) LoadFromFile(caCertFile, caKeyFile string) error {
 	c.CAKeyBytes = caKeyBytes
 	c.loadedFromSecret = false
 	return c.loadKeyPair()
-}
-
-// StoreAsConfigMap creates or updates the CA certificate in a K8s configmap
-func (c *CA) StoreAsConfigMap(ctx context.Context, k8sClient *kubernetes.Clientset) error {
-	if c.CACertBytes == nil || c.CAKeyBytes == nil {
-		return fmt.Errorf("cannot create configmap %s/%s from empty certificate",
-			c.ConfigMapNamespace, c.ConfigMapName)
-	}
-
-	scopedLog := log.WithFields(logrus.Fields{
-		logfields.K8sConfigMapNamespace: c.ConfigMapNamespace,
-		logfields.K8sConfigMapName:      c.ConfigMapName,
-	})
-	scopedLog.Info("Creating K8s ConfigMap")
-
-	configMap := &v1.ConfigMap{
-		ObjectMeta: meta_v1.ObjectMeta{
-			Name:      c.ConfigMapName,
-			Namespace: c.ConfigMapNamespace,
-		},
-		BinaryData: map[string][]byte{
-			"ca.crt": c.CACertBytes,
-		},
-	}
-
-	k8sConfigMaps := k8sClient.CoreV1().ConfigMaps(c.ConfigMapNamespace)
-	_, err := k8sConfigMaps.Create(ctx, configMap, meta_v1.CreateOptions{})
-	if k8sErrors.IsAlreadyExists(err) {
-		scopedLog.Info("ConfigMap already exists, updating it instead")
-		_, err = k8sConfigMaps.Update(ctx, configMap, meta_v1.UpdateOptions{})
-	}
-	return err
 }
 
 // StoreAsSecret creates or updates the CA certificate in a K8s secret

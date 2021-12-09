@@ -21,6 +21,8 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// DefaultLogger is the logrus logger instance used through the certgen
+// packages.
 var DefaultLogger = logrus.New()
 
 func init() {
