@@ -39,7 +39,8 @@ const binaryName = "cilium-certgen"
 
 var log = logging.DefaultLogger.WithField(logfields.LogSubsys, binaryName)
 
-func New() *cobra.Command {
+// New creates and returns a certgen command.
+func New() (*cobra.Command, error) {
 	vp := viper.New()
 	rootCmd := &cobra.Command{
 		Use:           binaryName + " [flags]",
@@ -125,14 +126,21 @@ func New() *cobra.Command {
 	vp.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
 	vp.SetEnvPrefix(binaryName)
 	vp.AutomaticEnv()
-	vp.BindPFlags(flags)
 
-	return rootCmd
+	if err := vp.BindPFlags(flags); err != nil {
+		return nil, err
+	}
+
+	return rootCmd, nil
 }
 
 // Execute runs the root command. This is called by main.main().
 func Execute() error {
-	return New().Execute()
+	cmd, err := New()
+	if err != nil {
+		return err
+	}
+	return cmd.Execute()
 }
 
 // k8sConfig creates a new Kubernetes config either based on the provided

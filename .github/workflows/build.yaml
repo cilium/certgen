@@ -23,6 +23,14 @@ jobs:
           go mod tidy
           go mod vendor
           test -z "$(git status --porcelain)" || (echo "please run 'go mod tidy && go mod vendor', and submit your changes"; exit 1)
+      - name: Run static checks
+        uses: golangci/golangci-lint-action@v2
+        with:
+          version: v1.43.0
+          args: --config=.golangci.yml --verbose
+          skip-go-installation: true
+          skip-pkg-cache: true
+          skip-build-cache: true
       - name: Build
         run: |
           go build ./...
