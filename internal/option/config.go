@@ -96,7 +96,7 @@ type CertGenConfig struct {
 
 	// CACertFile is the path to the Cilium CA cert PEM (if CAGenerate is false)
 	CACertFile string
-	// HubbleCAKeyFile is the path to the Cilium CA key PEM (if CAGenerate is false)
+	// CAKeyFile is the path to the Cilium CA key PEM (if CAGenerate is false)
 	CAKeyFile string
 
 	// CAGenerate can be set to true to generate a new Cilium CA secret.
