@@ -167,30 +167,28 @@ func generateCertificates() error {
 		return fmt.Errorf("failed initialize kubernetes client: %w", err)
 	}
 
+	// Store after all the requested certs have been successfully generated
+	count := 0
+
 	ciliumCA := generate.NewCA(option.Config.CASecretName, option.Config.CASecretNamespace)
 
-	if option.Config.CAReuseSecret {
-		// Read CA from Secret if it already exists
-		ctx, cancel := context.WithTimeout(context.Background(), option.Config.K8sRequestTimeout)
-		defer cancel()
-		err = ciliumCA.LoadFromSecret(ctx, k8sClient)
-		if err != nil {
-			if k8sErrors.IsNotFound(err) && option.Config.CAGenerate {
-				log.Info("Cilium CA secret does not exist, generating new CA")
-			} else {
-				// Permission error or something like that
-				return fmt.Errorf("failed to load Cilium CA from secret: %w", err)
-			}
-		} else {
-			log.Info("Loaded Cilium CA Secret")
-		}
-	}
-
-	// Generate a CA only if we were not able to load it from secret
-	if option.Config.CAGenerate && !ciliumCA.LoadedFromSecret() {
+	if option.Config.CAGenerate {
 		err = ciliumCA.Generate(option.Config.CACommonName, option.Config.CAValidityDuration)
 		if err != nil {
 			return fmt.Errorf("failed to generate Cilium CA: %w", err)
+		}
+		ctx, cancel := context.WithTimeout(context.Background(), option.Config.K8sRequestTimeout)
+		defer cancel()
+
+		err = ciliumCA.StoreAsSecret(ctx, k8sClient, !option.Config.CAReuseSecret)
+		if err != nil {
+			if !k8sErrors.IsAlreadyExists(err) || !option.Config.CAReuseSecret {
+				return fmt.Errorf("failed to create secret for Cilium CA: %w", err)
+			}
+			// reset so that we can re-load later as CAReuseSecret is true
+			ciliumCA.Reset()
+		} else {
+			count++
 		}
 	} else if option.Config.CACertFile != "" && option.Config.CAKeyFile != "" {
 		log.Info("Loading Cilium CA from file")
@@ -198,6 +196,16 @@ func generateCertificates() error {
 		if err != nil {
 			return fmt.Errorf("failed to load Cilium CA from file: %w", err)
 		}
+	}
+
+	if ciliumCA.IsEmpty() && option.Config.CAReuseSecret {
+		ctx, cancel := context.WithTimeout(context.Background(), option.Config.K8sRequestTimeout)
+		defer cancel()
+		err = ciliumCA.LoadFromSecret(ctx, k8sClient)
+		if err != nil {
+			return fmt.Errorf("failed to load Cilium CA from secret: %w", err)
+		}
+		log.Info("Loaded Cilium CA Secret")
 	}
 
 	var hubbleServerCert *generate.Cert
@@ -315,18 +323,6 @@ func generateCertificates() error {
 		if err != nil {
 			return fmt.Errorf("failed to generate ClustermeshApiserver remote cert: %w", err)
 		}
-	}
-
-	// Store after all the requested certs have been successfully generated
-	count := 0
-
-	if option.Config.CAGenerate && !ciliumCA.LoadedFromSecret() {
-		ctx, cancel := context.WithTimeout(context.Background(), option.Config.K8sRequestTimeout)
-		defer cancel()
-		if err := ciliumCA.StoreAsSecret(ctx, k8sClient); err != nil {
-			return fmt.Errorf("failed to create secret for Cilium CA: %w", err)
-		}
-		count++
 	}
 
 	if option.Config.HubbleServerCertGenerate {
