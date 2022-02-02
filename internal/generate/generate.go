@@ -23,8 +23,6 @@ import (
 	"io/ioutil"
 	"time"
 
-	"github.com/cilium/certgen/internal/logging"
-	"github.com/cilium/certgen/internal/logging/logfields"
 	"github.com/cloudflare/cfssl/cli/genkey"
 	"github.com/cloudflare/cfssl/config"
 	"github.com/cloudflare/cfssl/csr"
@@ -37,6 +35,9 @@ import (
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+
+	"github.com/cilium/certgen/internal/logging"
+	"github.com/cilium/certgen/internal/logging/logfields"
 )
 
 var (
@@ -204,6 +205,18 @@ func (c *CA) LoadedFromSecret() bool {
 	return c.loadedFromSecret
 }
 
+// IsEmpty returns true if this CA is empty
+func (c *CA) IsEmpty() bool {
+	return c.CAKey == nil && c.CACert == nil
+}
+
+// Reset resets ca key and ca cert values, this is useful for reload or regeneration.
+func (c *CA) Reset() {
+	c.CAKey = nil
+	c.CACert = nil
+	c.loadedFromSecret = false
+}
+
 // Generate the root certificate and keyfile. Populates c.CACertBytes and c.CAKeyBytes
 func (c *CA) Generate(commonName string, validityDuration time.Duration) error {
 	log.WithFields(logrus.Fields{
@@ -253,7 +266,10 @@ func (c *CA) LoadFromFile(caCertFile, caKeyFile string) error {
 }
 
 // StoreAsSecret creates or updates the CA certificate in a K8s secret
-func (c *CA) StoreAsSecret(ctx context.Context, k8sClient *kubernetes.Clientset) error {
+// - If force is true, the existing secret with same name in same namespace (if available) will be overwritten.
+// - If force is false and there is existing secret with same name in same namespace, just
+//   throws IsAlreadyExists error to caller
+func (c *CA) StoreAsSecret(ctx context.Context, k8sClient *kubernetes.Clientset, force bool) error {
 	if c.CACertBytes == nil || c.CAKeyBytes == nil {
 		return fmt.Errorf("cannot create secret %s/%s from empty certificate",
 			c.SecretNamespace, c.SecretName)
@@ -279,8 +295,13 @@ func (c *CA) StoreAsSecret(ctx context.Context, k8sClient *kubernetes.Clientset)
 	k8sSecrets := k8sClient.CoreV1().Secrets(c.SecretNamespace)
 	_, err := k8sSecrets.Create(ctx, secret, meta_v1.CreateOptions{})
 	if k8sErrors.IsAlreadyExists(err) {
-		scopedLog.Info("Secret already exists, updating it instead")
-		_, err = k8sSecrets.Update(ctx, secret, meta_v1.UpdateOptions{})
+		if force {
+			scopedLog.Info("Secret already exists, overwrite existing one instead")
+			_, err = k8sSecrets.Update(ctx, secret, meta_v1.UpdateOptions{})
+		} else {
+			scopedLog.Warn("Secret already exists")
+			return err
+		}
 	}
 	return err
 }
