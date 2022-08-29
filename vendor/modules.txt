@@ -14,8 +14,8 @@ github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1
 # github.com/cespare/xxhash/v2 v2.1.1
 ## explicit; go 1.11
 github.com/cespare/xxhash/v2
-# github.com/cloudflare/cfssl v1.6.1
-## explicit; go 1.14
+# github.com/cloudflare/cfssl v1.6.2
+## explicit; go 1.16
 github.com/cloudflare/cfssl/api
 github.com/cloudflare/cfssl/api/client
 github.com/cloudflare/cfssl/auth
@@ -500,7 +500,7 @@ go.uber.org/zap/internal/color
 go.uber.org/zap/internal/exit
 go.uber.org/zap/zapcore
 go.uber.org/zap/zapgrpc
-# golang.org/x/crypto v0.0.0-20220411220226-7b82a4e95df4
+# golang.org/x/crypto v0.0.0-20220824171710-5757bc0c5503
 ## explicit; go 1.17
 golang.org/x/crypto/bcrypt
 golang.org/x/crypto/blowfish
