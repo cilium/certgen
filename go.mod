@@ -5,7 +5,7 @@ go 1.18
 require (
 	github.com/cloudflare/cfssl v1.6.3
 	github.com/sirupsen/logrus v1.9.0
-	github.com/spf13/cobra v1.5.0
+	github.com/spf13/cobra v1.6.0
 	github.com/spf13/viper v1.13.0
 	k8s.io/api v0.23.3
 	k8s.io/apimachinery v0.23.3
@@ -47,7 +47,7 @@ require (
 	github.com/grpc-ecosystem/grpc-gateway v1.16.0 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/imdario/mergo v0.3.9 // indirect
-	github.com/inconshreveable/mousetrap v1.0.0 // indirect
+	github.com/inconshreveable/mousetrap v1.0.1 // indirect
 	github.com/jhump/protoreflect v1.8.2 // indirect
 	github.com/jmoiron/sqlx v1.3.3 // indirect
 	github.com/jonboulle/clockwork v0.2.2 // indirect
