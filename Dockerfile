@@ -1,6 +1,6 @@
 # (first line comment needed for DOCKER_BUILDKIT use)
 #
-ARG GOLANG_IMAGE=docker.io/library/golang:1.18.2-alpine3.15@sha256:e6b729ae22a2f7b6afcc237f7b9da3a27151ecbdcd109f7ab63a42e52e750262
+ARG GOLANG_IMAGE=docker.io/library/golang:1.20.2-alpine3.17@sha256:4e6bc0eafc261b6c8ba9bd9999b6698e8cefbe21e6d90fbc10c34599d75dc608
 ARG BASE_IMAGE=scratch
 
 FROM ${GOLANG_IMAGE} as builder
