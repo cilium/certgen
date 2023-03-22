@@ -7,28 +7,72 @@ run:
 linters:
   disable-all: true
   enable:
+    - asasalint
     - asciicheck
+    - bidichk
+    - bodyclose
+    - contextcheck
+    - decorder
+    - dupword
+    - durationcheck
+    - errchkjson
+    - errname
+    - gocheckcompilerdirectives
+    - gocritic
     - goerr113
     - gofmt
+    - goheader
     - goimports
+    - goprintffuncname
     - gosec
     - gosimple
     - govet
+    - importas
     - ineffassign
+    - interfacebloat
+    - makezero
     - misspell
+    - musttag
+    - nakedret
+    - nilerr
+    - noctx
+    - nosprintfhostport
+    - predeclared
+    - promlinter
+    - reassign
     - revive
+    - rowserrcheck
+    - sqlclosecheck
     - staticcheck
-    - structcheck
+    - tenv
     - typecheck
+    - unconvert
+    - unparam
     - unused
-    - varcheck
-
+    - usestdlibvars
+    - wastedassign
 linters-settings:
+  gocritic:
+    disabled-checks:
+      - exitAfterDefer
+      - singleCaseSwitch
+  goheader:
+    template-path: ./HEADER
+  gosec:
+    # available rules: https://github.com/securego/gosec#available-rules
+    includes: [] # include all available rules
+    excludes:
+      - G104 # Audit errors not checked
+      - G307 # Deferring a method which returns an error
   govet:
     enable-all: true
     disable:
       - fieldalignment
       - shadow
+  revive:
+    rules:
+      - name: package-comments
+        disabled: true
 
 issues:
   # Default rules exclude Go doc comments check, which is rather unfortunate.
