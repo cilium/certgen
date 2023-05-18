@@ -4,7 +4,7 @@ updates:
     directory: /
     schedule:
       interval: daily
-    open-pull-requests-limit: 1
+    open-pull-requests-limit: 3
     rebase-strategy: "disabled"
     ignore:
         # k8s dependencies will be updated manually all at once
@@ -15,12 +15,12 @@ updates:
     directory: /
     schedule:
       interval: daily
-    open-pull-requests-limit: 1
+    open-pull-requests-limit: 5
     rebase-strategy: "disabled"
 
   - package-ecosystem: docker
     directory: /
     schedule:
       interval: daily
-    open-pull-requests-limit: 1
+    open-pull-requests-limit: 5
     rebase-strategy: "disabled"
