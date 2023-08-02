@@ -31,6 +31,7 @@ linters:
     - ineffassign
     - interfacebloat
     - makezero
+    - mirror
     - misspell
     - musttag
     - nakedret
@@ -44,6 +45,7 @@ linters:
     - rowserrcheck
     - sqlclosecheck
     - staticcheck
+    - tagalign
     - tenv
     - typecheck
     - unconvert
