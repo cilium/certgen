@@ -5,7 +5,7 @@ go 1.20
 require (
 	github.com/cloudflare/cfssl v1.6.4
 	github.com/sirupsen/logrus v1.9.3
-	github.com/spf13/cobra v1.7.0
+	github.com/spf13/cobra v1.8.0
 	github.com/spf13/viper v1.17.0
 	k8s.io/api v0.28.3
 	k8s.io/apimachinery v0.28.3
