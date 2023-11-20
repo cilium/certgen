@@ -1,6 +1,8 @@
 # (first line comment needed for DOCKER_BUILDKIT use)
 #
-ARG GOLANG_IMAGE=docker.io/library/golang:1.20.2-alpine3.17@sha256:4e6bc0eafc261b6c8ba9bd9999b6698e8cefbe21e6d90fbc10c34599d75dc608
+# use skopeo inspect to get the multiarch manifest list digest
+# skopeo inspect --override-os linux docker://golang:1.21.4-alpine4.18 | jq -r '.Digest'
+ARG GOLANG_IMAGE=docker.io/library/golang:1.21.4-alpine3.18@sha256:110b07af87238fbdc5f1df52b00927cf58ce3de358eeeb1854f10a8b5e5e1411
 ARG BASE_IMAGE=scratch
 
 FROM ${GOLANG_IMAGE} as builder
