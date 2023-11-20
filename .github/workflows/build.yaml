@@ -8,12 +8,12 @@ jobs:
   build:
     runs-on: ubuntu-22.04
     steps:
+      - name: Checkout code
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
       - name: Install Go
         uses: actions/setup-go@93397bea11091df50f3d7e59dc26a7711a8bcfbe
         with:
-          go-version: '1.20.7'
-      - name: Checkout code
-        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+          go-version-file: 'go.mod'
       - name: Formatting check
         run: |
           go fmt ./...
@@ -34,7 +34,7 @@ jobs:
       - name: govulncheck
         uses: golang/govulncheck-action@7da72f730e37eeaad891fcff0a532d27ed737cd4
         with:
-          go-version: '1.20.7'
+          go-version-file: 'go.mod'
           go-package: './...'
       - name: Build
         run: |

@@ -2,7 +2,6 @@
 # Also https://github.com/cilium/cilium/blob/master/.golangci.yaml as a
 # reference.
 run:
-  go: '1.20'
   timeout: 5m  # default is 1m
 linters:
   disable-all: true
