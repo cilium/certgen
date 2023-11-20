@@ -37,6 +37,7 @@ linters:
     - nilerr
     - noctx
     - nosprintfhostport
+    - perfsprint
     - predeclared
     - promlinter
     - reassign
@@ -46,6 +47,7 @@ linters:
     - staticcheck
     - tagalign
     - tenv
+    - testifylint
     - typecheck
     - unconvert
     - unparam

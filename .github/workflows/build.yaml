@@ -26,7 +26,7 @@ jobs:
       - name: Run static checks
         uses: golangci/golangci-lint-action@3a919529898de77ec3da873e3063ca4b10e7f5cc
         with:
-          version: v1.53.3
+          version: v1.55.2
           # use our .golangci.yml and configure output to be logged in the GHA, in addition to annotating the commit.
           # see https://github.com/golangci/golangci-lint-action/issues/119#issuecomment-981090648 for output
           args: --config=.golangci.yml --verbose --out-${NO_FUTURE}format colored-line-number
