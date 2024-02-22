@@ -32,7 +32,7 @@ jobs:
           args: --config=.golangci.yml --verbose --out-${NO_FUTURE}format colored-line-number
           skip-cache: true
       - name: govulncheck
-        uses: golang/govulncheck-action@7da72f730e37eeaad891fcff0a532d27ed737cd4
+        uses: golang/govulncheck-action@3a32958c2706f7048305d5a2e53633d7e37e97d0
         with:
           go-version-file: 'go.mod'
           go-package: './...'
