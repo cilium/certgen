@@ -87,6 +87,12 @@ func New() (*cobra.Command, error) {
 	flags.String(option.HubbleServerCertSecretName, defaults.HubbleServerCertSecretName, "Name of the K8s Secret where the Hubble server cert and key are stored in")
 	flags.String(option.HubbleServerCertSecretNamespace, "", "Overwrites the namespace of the K8s Secret where the Hubble server cert and key are stored in")
 
+	flags.Bool(option.HubbleMetricsServerCertGenerate, defaults.HubbleMetricsServerCertGenerate, "Generate and store Hubble metrics server certificate")
+	flags.String(option.HubbleMetricsServerCertCommonName, defaults.HubbleMetricsServerCertCommonName, "Hubble metrics server certificate common name")
+	flags.Duration(option.HubbleMetricsServerCertValidityDuration, defaults.HubbleMetricsServerCertValidityDuration, "Hubble metrics server certificate validity duration")
+	flags.String(option.HubbleMetricsServerCertSecretName, defaults.HubbleMetricsServerCertSecretName, "Name of the K8s Secret where the Hubble metrics server cert and key are stored in")
+	flags.String(option.HubbleMetricsServerCertSecretNamespace, "", "Overwrites the namespace of the K8s Secret where the Hubble metrics server cert and key are stored in")
+
 	// Extenal Workload certs
 	flags.String(option.CiliumNamespace, defaults.CiliumNamespace, "Namespace where the cert secrets and configmaps are stored in")
 
@@ -213,6 +219,22 @@ func generateCertificates() error {
 		}
 	}
 
+	var hubbleMetricsServerCert *generate.Cert
+	if option.Config.HubbleMetricsServerCertGenerate {
+		log.Info("Generating server certificates for Hubble")
+		hubbleMetricsServerCert = generate.NewCert(
+			option.Config.HubbleMetricsServerCertCommonName,
+			option.Config.HubbleMetricsServerCertValidityDuration,
+			defaults.HubbleMetricsServerCertUsage,
+			option.Config.HubbleMetricsServerCertSecretName,
+			option.Config.HubbleMetricsServerCertSecretNamespace,
+		)
+		err := hubbleMetricsServerCert.Generate(ciliumCA)
+		if err != nil {
+			return fmt.Errorf("failed to generate Hubble server cert: %w", err)
+		}
+	}
+
 	var hubbleRelayClientCert *generate.Cert
 	if option.Config.HubbleRelayClientCertGenerate {
 		log.Info("Generating client certificates for Hubble Relay")
@@ -318,6 +340,15 @@ func generateCertificates() error {
 		ctx, cancel := context.WithTimeout(context.Background(), option.Config.K8sRequestTimeout)
 		defer cancel()
 		if err := hubbleServerCert.StoreAsSecret(ctx, k8sClient); err != nil {
+			return fmt.Errorf("failed to create secret for Hubble server cert: %w", err)
+		}
+		count++
+	}
+
+	if option.Config.HubbleMetricsServerCertGenerate {
+		ctx, cancel := context.WithTimeout(context.Background(), option.Config.K8sRequestTimeout)
+		defer cancel()
+		if err := hubbleMetricsServerCert.StoreAsSecret(ctx, k8sClient); err != nil {
 			return fmt.Errorf("failed to create secret for Hubble server cert: %w", err)
 		}
 		count++
