@@ -98,7 +98,7 @@ jobs:
           mkdir -p image-digest/
 
       - name: Download digests of all images built
-        uses: actions/download-artifact@8caf195ad4b1dee92908e23f56eeb0696f1dd42d
+        uses: actions/download-artifact@9c19ed7fe5d278cd354c7dfd5d3b88589c7e2395
         with:
           path: image-digest/
 
