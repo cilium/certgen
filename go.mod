@@ -1,6 +1,6 @@
 module github.com/cilium/certgen
 
-go 1.22.2
+go 1.22.3
 
 require (
 	github.com/cloudflare/cfssl v1.6.5
