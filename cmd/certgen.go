@@ -297,7 +297,7 @@ func generateCertificates() error {
 			defaults.ClustermeshApiserverCertUsage,
 			option.Config.ClustermeshApiserverAdminCertSecretName,
 			option.Config.CiliumNamespace,
-		).WithHosts([]string{"localhost"})
+		).WithHosts(nil /* Don't add the CN as SAN */)
 		err = clustermeshApiserverAdminCert.Generate(ciliumCA)
 		if err != nil {
 			return fmt.Errorf("failed to generate ClustermeshApiserver admin cert: %w", err)
@@ -313,7 +313,7 @@ func generateCertificates() error {
 			defaults.ClustermeshApiserverCertUsage,
 			option.Config.ClustermeshApiserverClientCertSecretName,
 			option.Config.CiliumNamespace,
-		)
+		).WithHosts(nil /* Don't add the CN as SAN */)
 		err = clustermeshApiserverClientCert.Generate(ciliumCA)
 		if err != nil {
 			return fmt.Errorf("failed to generate ClustermeshApiserver client cert: %w", err)
@@ -329,7 +329,7 @@ func generateCertificates() error {
 			defaults.ClustermeshApiserverCertUsage,
 			option.Config.ClustermeshApiserverRemoteCertSecretName,
 			option.Config.CiliumNamespace,
-		)
+		).WithHosts(nil /* Don't add the CN as SAN */)
 		err = clustermeshApiserverRemoteCert.Generate(ciliumCA)
 		if err != nil {
 			return fmt.Errorf("failed to generate ClustermeshApiserver remote cert: %w", err)
