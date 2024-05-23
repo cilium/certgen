@@ -91,6 +91,14 @@ func (c *Cert) Generate(ca *CA) error {
 		return err
 	}
 
+	for _, usage := range c.Usage {
+		_, ok1 := config.KeyUsage[usage]
+		_, ok2 := config.ExtKeyUsage[usage]
+		if !ok1 && !ok2 {
+			return fmt.Errorf("invalid key usage %q", usage)
+		}
+	}
+
 	policy := &config.Signing{
 		Default: &config.SigningProfile{
 			Usage:  c.Usage,
