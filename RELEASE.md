@@ -2,6 +2,9 @@
 
 Release process and checklist for `certgen`.
 
+> [!NOTE]  
+> If this is a v0.1.x maintenance release, be sure to checkout the v0.1 branch first
+
 ## Modify the Version
 
 Update the Version `var` in `internal/version/version.go`
