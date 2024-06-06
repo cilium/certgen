@@ -17,10 +17,6 @@ const (
 	// Debug enables debug messages.
 	Debug = "debug"
 
-	// CiliumNamespace is the Kubernetes namespace in which Cilium is
-	// installed.
-	CiliumNamespace = "cilium-namespace"
-
 	// K8sKubeConfigPath is the path to the kubeconfig If empty, the in-cluster
 	// configuration is used.
 	K8sKubeConfigPath = "k8s-kubeconfig-path"
@@ -66,10 +62,6 @@ const (
 type CertGenConfig struct {
 	// Debug enables debug messages.
 	Debug bool
-
-	// CiliumNamespace is the Kubernetes namespace in which Cilium is
-	// installed.
-	CiliumNamespace string
 
 	// K8sKubeConfigPath is the path to the kubeconfig If empty, the in-cluster
 	// configuration is used.
@@ -124,16 +116,6 @@ type CertificateConfig struct {
 	Validity   time.Duration `yaml:"validity"`
 }
 
-// getStringWithFallback returns the value associated with the key as a string
-// if it is non-empty. If the value is empty, this function returns the value
-// associated with fallbackKey
-func getStringWithFallback(vp *viper.Viper, key, fallbackKey string) string { //nolint:unparam
-	if value := vp.GetString(key); value != "" {
-		return value
-	}
-	return vp.GetString(fallbackKey)
-}
-
 // PopulateFrom populates the config struct with the values provided by vp
 func (c *CertGenConfig) PopulateFrom(vp *viper.Viper) {
 	c.Debug = vp.GetBool(Debug)
@@ -148,9 +130,7 @@ func (c *CertGenConfig) PopulateFrom(vp *viper.Viper) {
 	c.CACommonName = vp.GetString(CACommonName)
 	c.CAValidityDuration = vp.GetDuration(CAValidityDuration)
 	c.CASecretName = vp.GetString(CASecretName)
-	c.CASecretNamespace = getStringWithFallback(vp, CASecretNamespace, CiliumNamespace)
-
-	c.CiliumNamespace = vp.GetString(CiliumNamespace)
+	c.CASecretNamespace = vp.GetString(CASecretNamespace)
 
 	c.CertsConfig = vp.GetString(CertsConfig)
 	c.CertsConfigFile = vp.GetString(CertsConfigFile)

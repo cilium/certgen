@@ -16,11 +16,11 @@ import (
 	"github.com/cilium/certgen/internal/logging/logfields"
 	"github.com/cilium/certgen/internal/option"
 	"github.com/cilium/certgen/internal/version"
-	"gopkg.in/yaml.v3"
 
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"gopkg.in/yaml.v3"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -70,9 +70,7 @@ func New() (*cobra.Command, error) {
 	flags.String(option.CACommonName, defaults.CACommonName, "Cilium CA common name")
 	flags.Duration(option.CAValidityDuration, defaults.CAValidityDuration, "Cilium CA validity duration")
 	flags.String(option.CASecretName, defaults.CASecretName, "Name of the K8s Secret where the Cilium CA cert and key are stored in")
-	flags.String(option.CASecretNamespace, "", "Overwrites the namespace of the K8s Secret where the Cilium CA cert and key are stored in")
-
-	flags.String(option.CiliumNamespace, defaults.CiliumNamespace, "Namespace where the cert secrets and configmaps are stored in")
+	flags.String(option.CASecretNamespace, defaults.CASecretNamespace, "Namespace of the K8s Secret where the Cilium CA cert and key are stored in")
 
 	flags.String(option.CertsConfig, "", "YAML configuration of the certificates to generate, takes precedence over "+option.CertsConfigFile)
 	flags.String(option.CertsConfigFile, "", "Path to the file containing the YAML configuration of the certificates to generate")
