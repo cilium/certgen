@@ -9,10 +9,6 @@ const (
 	// Debug enables debug messages.
 	Debug = false
 
-	// CiliumNamespace is the Kubernetes namespace in which Cilium is
-	// installed.
-	CiliumNamespace = "kube-system"
-
 	// K8sRequestTimeout specifies the timeout for K8s API requests.
 	K8sRequestTimeout = 60 * time.Second
 
@@ -32,4 +28,7 @@ const (
 	// CASecretName is the Kubernetes Secret in which the Cilium CA certificate
 	// is read from and/or written to.
 	CASecretName = "cilium-ca"
+	// CASecretNamespace is the namespace in which the Cilium CA certificate is
+	// read from and/or written to.
+	CASecretNamespace = "kube-system"
 )
