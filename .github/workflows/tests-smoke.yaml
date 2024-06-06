@@ -1,0 +1,196 @@
+name: Smoke Test
+
+on:
+  pull_request: {}
+  push:
+    branches:
+      - main
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    name: Build and test
+    steps:
+      - name: Create the target kind cluster
+        uses: helm/kind-action@0025e74a8c7512023d06dc019c617aa3cf561fde
+
+      - name: Checkout code
+        uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29
+
+      - name: Install Go
+        uses: actions/setup-go@cdcb36043654635271a94b9a6d1392de5bb323a7
+        with:
+          go-version-file: 'go.mod'
+
+      - name: Build the certgen binary
+        run: |
+          go build -o certgen .
+
+      - name: Create the configuration file
+        run: |
+          cat <<EOF > config.yaml
+          certs:
+            - name: foo
+              namespace: ladybird
+              commonName: foo.cilium.io
+              hosts:
+              - foo.cilium.io
+              - qux.cilium.io
+              - 192.0.2.237
+              usage:
+              - signing
+              - key encipherment
+              - server auth
+              validity: 24h
+            - name: bar
+              namespace: ladybird
+              commonName: bar.cilium.io
+              usage:
+              - signing
+              - key encipherment
+              - client auth
+              validity: 3h
+          EOF
+
+      - name: Run and test
+        run: |
+          assert_equal() {
+            local got=$1
+            local expected=$2
+
+            if [[ "$got" != "$expected" ]]; then
+              echo "Equality assertion failed:"
+              echo "- expected: $expected"
+              echo "- got:      $got"
+              return 1
+            fi
+
+            return 0
+          }
+
+          assert_not_equal() {
+            local first="$1"
+            local second="$2"
+
+            if [[ "$first" == "$second" ]]; then
+                echo "Inequality assertion failed:"
+                echo "- first:  $first"
+                echo "- second: $second"
+                return 1
+            fi
+
+            return 0
+          }
+
+          assert_foo_cert() {
+            local crt="$1"
+            local ca="$2"
+
+            openssl verify -CAfile ${ca} ${crt}
+
+            assert_equal "$(openssl x509 -subject -noout -in ${crt})" "subject=CN = foo.cilium.io"
+            assert_equal "$(openssl x509 -ext subjectAltName -noout -in ${crt} | tail -n 1 | sed 's/^ *//')" "DNS:foo.cilium.io, DNS:qux.cilium.io, IP Address:192.0.2.237"
+            assert_equal "$(openssl x509 -ext keyUsage -noout -in ${crt} | tail -n 1 | sed 's/^ *//' )" "Digital Signature, Key Encipherment"
+            assert_equal "$(openssl x509 -ext extendedKeyUsage -noout -in ${crt} | tail -n 1 | sed 's/^ *//' )" "TLS Web Server Authentication"
+
+            openssl x509 -checkend 85800 -noout -in ${crt} # 25h50m
+            openssl x509 -checkend 87000 -noout -in ${crt} && exit 1 # 24h10m
+
+            return 0
+          }
+
+          assert_bar_cert() {
+            local crt="$1"
+            local ca="$2"
+
+            openssl verify -CAfile ${ca} ${crt}
+
+            assert_equal "$(openssl x509 -subject -noout -in ${crt})" "subject=CN = bar.cilium.io"
+            assert_equal "$(openssl x509 -ext subjectAltName -noout -in ${crt})" ""
+            assert_equal "$(openssl x509 -ext keyUsage -noout -in ${crt} | tail -n 1 | sed 's/^ *//' )" "Digital Signature, Key Encipherment"
+            assert_equal "$(openssl x509 -ext extendedKeyUsage -noout -in ${crt} | tail -n 1 | sed 's/^ *//' )" "TLS Web Client Authentication"
+
+            openssl x509 -checkend 10200 -noout -in ${crt} # 2h50m
+            openssl x509 -checkend 11400 -noout -in ${crt} && exit 1 # 3h10m
+
+            return 0
+          }
+
+
+          # Create the target namespaces
+          kubectl create namespace weasel
+          kubectl create namespace ladybird
+
+          echo
+          echo "Generating certificates"
+          ./certgen \
+              --k8s-kubeconfig-path=${HOME}/.kube/config \
+              --ca-generate --ca-reuse-secret \
+              --ca-secret-namespace=weasel \
+              --ca-secret-name=the-ca \
+              --ca-common-name="The CA" \
+              --ca-validity-duration=48h \
+              --config-file=config.yaml
+
+          echo
+          echo "Retrieving and verifying CA certificate"
+          kubectl get secret -n weasel the-ca --template='{{ index .data "ca.crt" }}' | base64 -d > ca.crt
+          openssl x509 -text -noout -in ca.crt
+          openssl verify -CAfile ca.crt ca.crt
+
+          assert_equal "$(openssl x509 -subject -noout -in ca.crt)" "subject=CN = The CA"
+          openssl x509 -checkend 172200 -noout -in ca.crt # 47h50m
+          openssl x509 -checkend 173400 -noout -in ca.crt && exit 1 # 48h10m
+
+          echo
+          echo "Retrieving and verifying 'foo' certificate"
+          kubectl get secret -n ladybird foo --template='{{ index .data "tls.crt" }}' | base64 -d > foo.crt
+          kubectl get secret -n ladybird foo --template='{{ index .data "ca.crt" }}' | base64 -d > foo.ca.crt
+          openssl x509 -text -noout -in foo.crt
+          assert_foo_cert foo.crt ca.crt
+          assert_equal "$(cat foo.ca.crt)" "$(cat ca.crt)"
+
+          echo
+          echo "Retrieving and verifying 'bar' certificate"
+          kubectl get secret -n ladybird bar --template='{{ index .data "tls.crt" }}' | base64 -d > bar.crt
+          kubectl get secret -n ladybird bar --template='{{ index .data "ca.crt" }}' | base64 -d > bar.ca.crt
+          openssl x509 -text -noout -in bar.crt
+          assert_bar_cert bar.crt ca.crt
+          assert_equal "$(cat bar.ca.crt)" "$(cat ca.crt)"
+
+          echo
+          echo "Regenerating certificates"
+          CILIUM_CERTGEN_CONFIG="$(cat config.yaml)" ./certgen \
+              --k8s-kubeconfig-path=${HOME}/.kube/config \
+              --ca-generate --ca-reuse-secret \
+              --ca-secret-namespace=weasel \
+              --ca-secret-name=the-ca \
+              --ca-common-name="The CA" \
+              --ca-validity-duration=48h
+
+          echo
+          echo "Retrieving and verifying CA certificate"
+          kubectl get secret -n weasel the-ca --template='{{ index .data "ca.crt" }}' | base64 -d > ca.new.crt
+          openssl x509 -text -noout -in ca.new.crt
+          # The CA certificate should not have been regenerated
+          assert_equal "$(cat ca.new.crt)" "$(cat ca.crt)"
+
+          echo
+          echo "Retrieving and verifying 'foo' certificate"
+          kubectl get secret -n ladybird foo --template='{{ index .data "tls.crt" }}' | base64 -d > foo.new.crt
+          kubectl get secret -n ladybird foo --template='{{ index .data "ca.crt" }}' | base64 -d > bar.ca.crt
+          openssl x509 -text -noout -in foo.new.crt
+          # The foo certificate should have been regenerated
+          assert_not_equal "$(openssl x509 -serial -noout -in foo.crt)" "$(openssl x509 -serial -noout -in foo.new.crt)"
+          assert_foo_cert foo.new.crt ca.crt
+          assert_equal "$(cat foo.ca.crt)" "$(cat ca.crt)"
+
+          echo
+          echo "Retrieving and verifying 'bar' certificate"
+          kubectl get secret -n ladybird bar --template='{{ index .data "tls.crt" }}' | base64 -d > bar.new.crt
+          kubectl get secret -n ladybird bar --template='{{ index .data "ca.crt" }}' | base64 -d > bar.ca.crt
+          openssl x509 -text -noout -in bar.new.crt
+          # The bar certificate should have been regenerated
+          assert_not_equal "$(openssl x509 -serial -noout -in bar.crt)" "$(openssl x509 -serial -noout -in bar.new.crt)"
+          assert_bar_cert bar.new.crt ca.crt
+          assert_equal "$(cat bar.ca.crt)" "$(cat ca.crt)"
