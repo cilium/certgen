@@ -222,8 +222,7 @@ func (c *CA) Generate(commonName string, validityDuration time.Duration) error {
 	}).Info("Creating CSR for certificate authority")
 
 	caCSR := &csr.CertificateRequest{
-		Names: []csr.Name{{C: "US", ST: "San Francisco", L: "CA", O: "Cilium", OU: "Cilium"}},
-		CN:    commonName,
+		CN: commonName,
 		CA: &csr.CAConfig{
 			Expiry: validityDuration.String(),
 		},
