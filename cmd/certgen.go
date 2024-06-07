@@ -62,15 +62,15 @@ func New() (*cobra.Command, error) {
 	flags.String(option.K8sKubeConfigPath, "", "Path to the K8s kubeconfig file. If absent, the in-cluster config is used.")
 	flags.Duration(option.K8sRequestTimeout, defaults.K8sRequestTimeout, "Timeout for K8s API requests")
 
-	flags.String(option.CACertFile, "", "Path to provided Cilium CA certificate file (required if Cilium CA is not generated)")
-	flags.String(option.CAKeyFile, "", "Path to provided Cilium CA key file (required if Cilium CA is not generated)")
+	flags.String(option.CACertFile, "", "Path to the provided CA certificate file (required if the CA is not generated)")
+	flags.String(option.CAKeyFile, "", "Path to the provided CA key file (required if the CA is not generated)")
 
-	flags.Bool(option.CAGenerate, defaults.CAGenerate, "Generate and store Cilium CA certificate")
-	flags.Bool(option.CAReuseSecret, defaults.CAReuseSecret, "Reuse the Cilium CA secret if it exists, otherwise generate a new one")
-	flags.String(option.CACommonName, defaults.CACommonName, "Cilium CA common name")
-	flags.Duration(option.CAValidityDuration, defaults.CAValidityDuration, "Cilium CA validity duration")
-	flags.String(option.CASecretName, defaults.CASecretName, "Name of the K8s Secret where the Cilium CA cert and key are stored in")
-	flags.String(option.CASecretNamespace, defaults.CASecretNamespace, "Namespace of the K8s Secret where the Cilium CA cert and key are stored in")
+	flags.Bool(option.CAGenerate, defaults.CAGenerate, "Generate and store the CA certificate")
+	flags.Bool(option.CAReuseSecret, defaults.CAReuseSecret, "Reuse the CA secret if it exists, otherwise generate a new one")
+	flags.String(option.CACommonName, defaults.CACommonName, "CA common name")
+	flags.Duration(option.CAValidityDuration, defaults.CAValidityDuration, "CA validity duration")
+	flags.String(option.CASecretName, defaults.CASecretName, "Name of the K8s Secret where the CA cert and key are stored in")
+	flags.String(option.CASecretNamespace, defaults.CASecretNamespace, "Namespace of the K8s Secret where the CA cert and key are stored in")
 
 	flags.String(option.CertsConfig, "", "YAML configuration of the certificates to generate, takes precedence over "+option.CertsConfigFile)
 	flags.String(option.CertsConfigFile, "", "Path to the file containing the YAML configuration of the certificates to generate")
@@ -148,42 +148,42 @@ func generateCertificates() error {
 	// Store after all the requested certs have been successfully generated
 	count := 0
 
-	ciliumCA := generate.NewCA(option.Config.CASecretName, option.Config.CASecretNamespace)
+	ca := generate.NewCA(option.Config.CASecretName, option.Config.CASecretNamespace)
 
 	if option.Config.CAGenerate {
-		err = ciliumCA.Generate(option.Config.CACommonName, option.Config.CAValidityDuration)
+		err = ca.Generate(option.Config.CACommonName, option.Config.CAValidityDuration)
 		if err != nil {
-			return fmt.Errorf("failed to generate Cilium CA: %w", err)
+			return fmt.Errorf("failed to generate CA: %w", err)
 		}
 		ctx, cancel := context.WithTimeout(context.Background(), option.Config.K8sRequestTimeout)
 		defer cancel()
 
-		err = ciliumCA.StoreAsSecret(ctx, k8sClient, !option.Config.CAReuseSecret)
+		err = ca.StoreAsSecret(ctx, k8sClient, !option.Config.CAReuseSecret)
 		if err != nil {
 			if !k8sErrors.IsAlreadyExists(err) || !option.Config.CAReuseSecret {
-				return fmt.Errorf("failed to create secret for Cilium CA: %w", err)
+				return fmt.Errorf("failed to create secret for CA: %w", err)
 			}
 			// reset so that we can re-load later as CAReuseSecret is true
-			ciliumCA.Reset()
+			ca.Reset()
 		} else {
 			count++
 		}
 	} else if option.Config.CACertFile != "" && option.Config.CAKeyFile != "" {
-		log.Info("Loading Cilium CA from file")
-		err = ciliumCA.LoadFromFile(option.Config.CACertFile, option.Config.CAKeyFile)
+		log.Info("Loading CA from file")
+		err = ca.LoadFromFile(option.Config.CACertFile, option.Config.CAKeyFile)
 		if err != nil {
-			return fmt.Errorf("failed to load Cilium CA from file: %w", err)
+			return fmt.Errorf("failed to load CA from file: %w", err)
 		}
 	}
 
-	if ciliumCA.IsEmpty() && option.Config.CAReuseSecret {
+	if ca.IsEmpty() && option.Config.CAReuseSecret {
 		ctx, cancel := context.WithTimeout(context.Background(), option.Config.K8sRequestTimeout)
 		defer cancel()
-		err = ciliumCA.LoadFromSecret(ctx, k8sClient)
+		err = ca.LoadFromSecret(ctx, k8sClient)
 		if err != nil {
-			return fmt.Errorf("failed to load Cilium CA from secret: %w", err)
+			return fmt.Errorf("failed to load CA from secret: %w", err)
 		}
-		log.Info("Loaded Cilium CA Secret")
+		log.Info("Loaded CA Secret")
 	}
 
 	log.Info("Generating certificates")
@@ -202,7 +202,7 @@ func generateCertificates() error {
 			cfg.Namespace,
 		).WithHosts(cfg.Hosts)
 
-		err := certs[i].Generate(ciliumCA)
+		err := certs[i].Generate(ca)
 		if err != nil {
 			return fmt.Errorf("failed to generate cert: %w", err)
 		}
