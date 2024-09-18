@@ -5,7 +5,7 @@
 ARG GOLANG_IMAGE=docker.io/library/golang:1.22.5-alpine3.19@sha256:0642d4f809abf039440540de1f0e83502401686e3946ed8e7398a1d94648aa6d
 ARG BASE_IMAGE=scratch
 
-FROM ${GOLANG_IMAGE} as builder
+FROM ${GOLANG_IMAGE} AS builder
 ADD . /go/src/github.com/cilium/certgen
 WORKDIR /go/src/github.com/cilium/certgen
 RUN CGO_ENABLED=0 go build -o cilium-certgen main.go
