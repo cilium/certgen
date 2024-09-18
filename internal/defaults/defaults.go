@@ -142,7 +142,7 @@ const (
 var (
 	// HubbleServerCertUsage are the key usages for the Hubble server x509
 	// certificate.
-	HubbleServerCertUsage = []string{"signing", "key encipherment", "server auth"}
+	HubbleServerCertUsage = []string{"signing", "key encipherment", "server auth", "client auth"}
 	// HubbleMetricsServerCertUsage are the key usages for the Hubble metrics
 	// server x509 certificate.
 	HubbleMetricsServerCertUsage = []string{"signing", "key encipherment", "server auth"}
