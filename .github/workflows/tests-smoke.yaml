@@ -12,7 +12,7 @@ jobs:
     name: Build and test
     steps:
       - name: Create the target kind cluster
-        uses: helm/kind-action@ae94020eaf628e9b9b9f341a10cc0cdcf5c018fb
+        uses: helm/kind-action@a1b0e391336a6ee6713a0583f8c6240d70863de3
 
       - name: Checkout code
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
