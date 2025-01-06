@@ -18,6 +18,7 @@ linters:
     - err113
     - errchkjson
     - errname
+    - exptostd
     - gocheckcompilerdirectives
     - gocritic
     - gofmt
@@ -57,6 +58,7 @@ linters:
     - unparam
     - unused
     - usestdlibvars
+    - usetesting
     - wastedassign
 linters-settings:
   gocritic:
