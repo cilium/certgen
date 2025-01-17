@@ -4,4 +4,4 @@
 package version
 
 // Version is the certgen version string.
-var Version = "0.2.2"
+var Version = "0.2.3"
