@@ -25,7 +25,7 @@ jobs:
           go mod vendor
           test -z "$(git status --porcelain)" || (echo "please run 'go mod tidy && go mod vendor', and submit your changes"; exit 1)
       - name: Run static checks
-        uses: golangci/golangci-lint-action@971e284b6050e8a5849b72094c50ab08da042db8
+        uses: golangci/golangci-lint-action@ec5d18412c0aeab7936cb16880d708ba2a64e1ae
         with:
           version: v1.63.4
           # use our .golangci.yml and configure output to be logged in the GHA, in addition to annotating the commit.
