@@ -481,7 +481,7 @@ var tldMap = map[string]GTLDPeriod{
 	"avianca": {
 		GTLD:           "avianca",
 		DelegationDate: "2016-03-09",
-		RemovalDate:    "",
+		RemovalDate:    "2024-03-27",
 	},
 	"aw": {
 		GTLD:           "aw",
@@ -1426,7 +1426,7 @@ var tldMap = map[string]GTLDPeriod{
 	"comcast": {
 		GTLD:           "comcast",
 		DelegationDate: "2016-07-07",
-		RemovalDate:    "",
+		RemovalDate:    "2024-02-06",
 	},
 	"commbank": {
 		GTLD:           "commbank",
@@ -1631,7 +1631,7 @@ var tldMap = map[string]GTLDPeriod{
 	"dabur": {
 		GTLD:           "dabur",
 		DelegationDate: "2015-01-24",
-		RemovalDate:    "",
+		RemovalDate:    "2024-09-25",
 	},
 	"dad": {
 		GTLD:           "dad",
@@ -2771,7 +2771,7 @@ var tldMap = map[string]GTLDPeriod{
 	"guardian": {
 		GTLD:           "guardian",
 		DelegationDate: "2016-05-13",
-		RemovalDate:    "",
+		RemovalDate:    "2024-03-05",
 	},
 	"gucci": {
 		GTLD:           "gucci",
@@ -4416,7 +4416,7 @@ var tldMap = map[string]GTLDPeriod{
 	"natura": {
 		GTLD:           "natura",
 		DelegationDate: "2016-02-11",
-		RemovalDate:    "",
+		RemovalDate:    "2024-06-12",
 	},
 	"navy": {
 		GTLD:           "navy",
@@ -5701,7 +5701,7 @@ var tldMap = map[string]GTLDPeriod{
 	"shaw": {
 		GTLD:           "shaw",
 		DelegationDate: "2016-03-22",
-		RemovalDate:    "",
+		RemovalDate:    "2024-07-09",
 	},
 	"shell": {
 		GTLD:           "shell",
@@ -6956,7 +6956,7 @@ var tldMap = map[string]GTLDPeriod{
 	"xfinity": {
 		GTLD:           "xfinity",
 		DelegationDate: "2016-07-07",
-		RemovalDate:    "",
+		RemovalDate:    "2024-02-06",
 	},
 	"xihuan": {
 		GTLD:           "xihuan",
