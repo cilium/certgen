@@ -2,11 +2,13 @@ module github.com/cilium/certgen
 
 go 1.23.0
 
+toolchain go1.24.1
+
 require (
 	github.com/cloudflare/cfssl v1.6.5
 	github.com/sirupsen/logrus v1.9.3
 	github.com/spf13/cobra v1.9.1
-	github.com/spf13/viper v1.20.0
+	github.com/spf13/viper v1.20.1
 	gopkg.in/yaml.v3 v3.0.1
 	k8s.io/api v0.32.3
 	k8s.io/apimachinery v0.32.3
