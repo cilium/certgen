@@ -304,11 +304,11 @@ func (c *CA) LoadFromSecret(ctx context.Context, k8sClient *kubernetes.Clientset
 	}
 
 	if len(secret.Data["ca.crt"]) == 0 {
-		return fmt.Errorf("Secret %s/%s has no CA cert", c.SecretNamespace, c.SecretName)
+		return fmt.Errorf("secret %s/%s has no CA cert", c.SecretNamespace, c.SecretName)
 	}
 
 	if len(secret.Data["ca.key"]) == 0 {
-		return fmt.Errorf("Secret %s/%s has no CA key", c.SecretNamespace, c.SecretName)
+		return fmt.Errorf("secret %s/%s has no CA key", c.SecretNamespace, c.SecretName)
 	}
 
 	c.CACertBytes = secret.Data["ca.crt"]
