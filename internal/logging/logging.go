@@ -14,7 +14,8 @@ import (
 
 // DefaultLoggerLvl is a runtime-configurable log level used by DefaultLogger.
 var DefaultLoggerLvl = new(slog.LevelVar)
-func init(){
+
+func init() {
 	// Start at INFO. Can be changed at runtime via DefaultLoggerLvl.Set(...).
 	DefaultLoggerLvl.Set(slog.LevelInfo)
 }
@@ -23,7 +24,7 @@ func init(){
 // packages.
 var DefaultLogger = slog.New(
 	slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{
-		Level:     DefaultLoggerLvl,
+		Level: DefaultLoggerLvl,
 	}),
 )
 

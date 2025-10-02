@@ -74,9 +74,9 @@ func (c *Cert) WithHosts(hosts []string) *Cert {
 // Generate the certificate and keyfile and populate c.CertBytes and c.CertKey
 func (c *Cert) Generate(ca *CA) error {
 	log.With(
-		slog.String(logfields.CertCommonName,       c.CommonName),
-		slog.String(logfields.CertValidityDuration, c.ValidityDuration.String()), // читаемо в text и JSON
-		slog.Any(   logfields.CertUsage,            c.Usage),                      // слайс/enum — как есть
+		slog.String(logfields.CertCommonName, c.CommonName),
+		slog.String(logfields.CertValidityDuration, c.ValidityDuration.String()),
+		slog.Any(logfields.CertUsage, c.Usage),
 	).Info("Creating CSR for certificate")
 
 	certRequest := &csr.CertificateRequest{
