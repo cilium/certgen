@@ -25,6 +25,13 @@ func init() {
 var DefaultLogger = slog.New(
 	slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{
 		Level: DefaultLoggerLvl,
+		// Hide empty message field
+		ReplaceAttr: func(_ []string, a slog.Attr) slog.Attr {
+			if a.Key == slog.MessageKey && a.Value.String() == "" {
+				return slog.Attr{}
+			}
+			return a
+		},
 	}),
 )
 
@@ -34,6 +41,9 @@ func init() {
 	})
 }
 
+// Static message literal to satisfy sloglint
+const emptyMsg = ""
+
 // sysLogger wraps slog to implement the cfsslLog.SyslogWriter
 type sysLogger struct {
 	l *slog.Logger
@@ -41,30 +51,30 @@ type sysLogger struct {
 
 // Debug implements cfsslLog.SyslogWriter
 func (s *sysLogger) Debug(msg string) {
-	s.l.With(logfields.LogSyslog, "debug").Debug(msg)
+	s.l.Debug(emptyMsg, logfields.LogSyslog, "debug", "detail", msg)
 }
 
 // Info implements cfsslLog.SyslogWriter
 func (s *sysLogger) Info(msg string) {
-	s.l.With(logfields.LogSyslog, "info").Info(msg)
+	s.l.Info(emptyMsg, logfields.LogSyslog, "info", "detail", msg)
 }
 
 // Warning implements cfsslLog.SyslogWriter
 func (s *sysLogger) Warning(msg string) {
-	s.l.With(logfields.LogSyslog, "warning").Warn(msg)
+	s.l.Warn(emptyMsg, logfields.LogSyslog, "warning", "detail", msg)
 }
 
 // Error implements cfsslLog.SyslogWriter
 func (s *sysLogger) Err(msg string) {
-	s.l.With(logfields.LogSyslog, "err").Error(msg)
+	s.l.Error(emptyMsg, logfields.LogSyslog, "err", "detail", msg)
 }
 
 // Crit implements cfsslLog.SyslogWriter
 func (s *sysLogger) Crit(msg string) {
-	s.l.With(logfields.LogSyslog, "crit").Error(msg)
+	s.l.Error(emptyMsg, logfields.LogSyslog, "crit", "detail", msg)
 }
 
 // Emerg implements cfsslLog.SyslogWriter
 func (s *sysLogger) Emerg(msg string) {
-	s.l.With(logfields.LogSyslog, "emerg").Error(msg)
+	s.l.Error(emptyMsg, logfields.LogSyslog, "emerg", "detail", msg)
 }

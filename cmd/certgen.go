@@ -47,7 +47,7 @@ func New() (*cobra.Command, error) {
 				logging.DefaultLoggerLvl.Set(slog.LevelDebug)
 			}
 
-			log.Info(fmt.Sprintf("%s %s", binaryName, version.Version))
+			log.Info("version", "binary", binaryName, "version", version.Version)
 
 			if err := generateCertificates(); err != nil {
 				log.With(slog.Any("error", err)).Error("failed to generate certificates")
@@ -224,7 +224,7 @@ func generateCertificates() error {
 		count++
 	}
 
-	log.Info(fmt.Sprintf("Successfully generated all %d requested certificates.", count))
+	log.Info("Successfully generated all requested certificates.", "count", count)
 
 	return nil
 }
