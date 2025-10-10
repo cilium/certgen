@@ -6,6 +6,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
@@ -17,7 +18,6 @@ import (
 	"github.com/cilium/certgen/internal/option"
 	"github.com/cilium/certgen/internal/version"
 
-	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"go.yaml.in/yaml/v3"
@@ -29,7 +29,7 @@ import (
 
 const binaryName = "cilium-certgen"
 
-var log = logging.DefaultLogger.WithField(logfields.LogSubsys, binaryName)
+var log = logging.DefaultLogger.With(slog.String(logfields.LogSubsys, binaryName))
 
 // New creates and returns a certgen command.
 func New() (*cobra.Command, error) {
@@ -44,13 +44,15 @@ func New() (*cobra.Command, error) {
 			option.Config.PopulateFrom(vp)
 
 			if option.Config.Debug {
-				logging.DefaultLogger.SetLevel(logrus.DebugLevel)
+				logging.Level.Set(slog.LevelDebug)
 			}
 
-			log.Infof("%s %s", binaryName, version.Version)
+			log.Info("Running...",
+				"version", version.Version,
+			)
 
 			if err := generateCertificates(); err != nil {
-				log.WithError(err).Fatal("failed to generate certificates")
+				log.Error("failed to generate certificates", "error", err)
 			}
 		},
 	}
@@ -189,10 +191,10 @@ func generateCertificates() error {
 	log.Info("Generating certificates")
 	certs := make([]*generate.Cert, len(certConfigs.Certs))
 	for i, cfg := range certConfigs.Certs {
-		log.WithFields(logrus.Fields{
-			logfields.K8sSecretName:      cfg.Name,
-			logfields.K8sSecretNamespace: cfg.Namespace,
-		}).Info("Generating certificate")
+		log.Info("Generating certificate",
+			logfields.K8sSecretName, cfg.Name,
+			logfields.K8sSecretNamespace, cfg.Namespace,
+		)
 
 		certs[i] = generate.NewCert(
 			cfg.CommonName,
@@ -210,10 +212,10 @@ func generateCertificates() error {
 
 	log.Info("Storing certificates")
 	for _, cert := range certs {
-		log.WithFields(logrus.Fields{
-			logfields.K8sSecretName:      cert.Name,
-			logfields.K8sSecretNamespace: cert.Namespace,
-		}).Info("Storing certificate")
+		log.Info("Storing certificate",
+			logfields.K8sSecretName, cert.Name,
+			logfields.K8sSecretNamespace, cert.Namespace,
+		)
 
 		ctx, cancel := context.WithTimeout(context.Background(), option.Config.K8sRequestTimeout)
 		defer cancel()
@@ -224,7 +226,7 @@ func generateCertificates() error {
 		count++
 	}
 
-	log.Infof("Successfully generated all %d requested certificates.", count)
+	log.Info("Successfully generated all requested certificates.", "count", count)
 
 	return nil
 }

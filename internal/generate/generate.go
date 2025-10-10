@@ -9,6 +9,7 @@ import (
 	"crypto/x509"
 	"errors"
 	"fmt"
+	"log/slog"
 	"os"
 	"time"
 
@@ -19,7 +20,6 @@ import (
 	"github.com/cloudflare/cfssl/initca"
 	"github.com/cloudflare/cfssl/signer"
 	"github.com/cloudflare/cfssl/signer/local"
-	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -30,7 +30,7 @@ import (
 )
 
 var (
-	log = logging.DefaultLogger.WithField(logfields.LogSubsys, "generate")
+	log = logging.DefaultLogger.With(logfields.LogSubsys, "generate")
 )
 
 // Cert contains the data and metadata of the certificate and keyfile.
@@ -73,11 +73,11 @@ func (c *Cert) WithHosts(hosts []string) *Cert {
 
 // Generate the certificate and keyfile and populate c.CertBytes and c.CertKey
 func (c *Cert) Generate(ca *CA) error {
-	log.WithFields(logrus.Fields{
-		logfields.CertCommonName:       c.CommonName,
-		logfields.CertValidityDuration: c.ValidityDuration,
-		logfields.CertUsage:            c.Usage,
-	}).Info("Creating CSR for certificate")
+	log.Info("Creating CSR for certificate",
+		logfields.CertCommonName, c.CommonName,
+		logfields.CertValidityDuration, c.ValidityDuration.String(),
+		logfields.CertUsage, c.Usage,
+	)
 
 	certRequest := &csr.CertificateRequest{
 		CN:         c.CommonName,
@@ -130,10 +130,10 @@ func (c *Cert) StoreAsSecret(ctx context.Context, k8sClient *kubernetes.Clientse
 			c.Namespace, c.Name)
 	}
 
-	scopedLog := log.WithFields(logrus.Fields{
-		logfields.K8sSecretNamespace: c.Namespace,
-		logfields.K8sSecretName:      c.Name,
-	})
+	scopedLog := log.With(
+		slog.String(logfields.K8sSecretNamespace, c.Namespace),
+		slog.String(logfields.K8sSecretName, c.Name),
+	)
 	scopedLog.Info("Creating K8s Secret")
 
 	secret := &v1.Secret{
@@ -216,10 +216,10 @@ func (c *CA) Reset() {
 
 // Generate the root certificate and keyfile. Populates c.CACertBytes and c.CAKeyBytes
 func (c *CA) Generate(commonName string, validityDuration time.Duration) error {
-	log.WithFields(logrus.Fields{
-		logfields.CertCommonName:       commonName,
-		logfields.CertValidityDuration: validityDuration,
-	}).Info("Creating CSR for certificate authority")
+	log.Info("Creating CSR for certificate authority",
+		logfields.CertCommonName, commonName,
+		logfields.CertValidityDuration, validityDuration.String(),
+	)
 
 	caCSR := &csr.CertificateRequest{
 		CN: commonName,
@@ -271,10 +271,10 @@ func (c *CA) StoreAsSecret(ctx context.Context, k8sClient *kubernetes.Clientset,
 			c.SecretNamespace, c.SecretName)
 	}
 
-	scopedLog := log.WithFields(logrus.Fields{
-		logfields.K8sSecretNamespace: c.SecretNamespace,
-		logfields.K8sSecretName:      c.SecretName,
-	})
+	scopedLog := log.With(
+		slog.String(logfields.K8sSecretNamespace, c.SecretNamespace),
+		slog.String(logfields.K8sSecretName, c.SecretName),
+	)
 	scopedLog.Info("Creating K8s Secret")
 
 	secret := &v1.Secret{
