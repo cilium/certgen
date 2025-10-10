@@ -4,53 +4,62 @@
 package logging
 
 import (
+	"log/slog"
+	"os"
+
 	"github.com/cilium/certgen/internal/logging/logfields"
 
 	cfsslLog "github.com/cloudflare/cfssl/log"
-	"github.com/sirupsen/logrus"
 )
 
-// DefaultLogger is the logrus logger instance used through the certgen
+// DefaultLoggerLvl is a runtime-configurable log level used by DefaultLogger.
+var Level = new(slog.LevelVar)
+
+// DefaultLogger is the log/slog logger instance used through the certgen
 // packages.
-var DefaultLogger = logrus.New()
+var DefaultLogger = slog.New(
+	slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{
+		Level: Level,
+	}),
+)
 
 func init() {
 	cfsslLog.SetLogger(&sysLogger{
-		l: DefaultLogger.WithField(logfields.LogSubsys, "cfssl"),
+		l: DefaultLogger.With(logfields.LogSubsys, "cfssl"),
 	})
 }
 
-// sysLogger wraps logrus to implement the cfsslLog.SyslogWriter
+// sysLogger wraps slog to implement the cfsslLog.SyslogWriter
 type sysLogger struct {
-	l *logrus.Entry
+	l *slog.Logger
 }
 
 // Debug implements cfsslLog.SyslogWriter
 func (s *sysLogger) Debug(msg string) {
-	s.l.WithField(logfields.LogSyslog, "debug").Debug(msg)
+	s.l.Debug(msg, logfields.LogSyslog, "debug") //nolint:sloglint
 }
 
 // Info implements cfsslLog.SyslogWriter
 func (s *sysLogger) Info(msg string) {
-	s.l.WithField(logfields.LogSyslog, "info").Info(msg)
+	s.l.Info(msg, logfields.LogSyslog, "info") //nolint:sloglint
 }
 
 // Warning implements cfsslLog.SyslogWriter
 func (s *sysLogger) Warning(msg string) {
-	s.l.WithField(logfields.LogSyslog, "warning").Warn(msg)
+	s.l.Warn(msg, logfields.LogSyslog, "warning") //nolint:sloglint
 }
 
 // Error implements cfsslLog.SyslogWriter
 func (s *sysLogger) Err(msg string) {
-	s.l.WithField(logfields.LogSyslog, "err").Error(msg)
+	s.l.Error(msg, logfields.LogSyslog, "err") //nolint:sloglint
 }
 
 // Crit implements cfsslLog.SyslogWriter
 func (s *sysLogger) Crit(msg string) {
-	s.l.WithField(logfields.LogSyslog, "crit").Error(msg)
+	s.l.Error(msg, logfields.LogSyslog, "crit") //nolint:sloglint
 }
 
 // Emerg implements cfsslLog.SyslogWriter
 func (s *sysLogger) Emerg(msg string) {
-	s.l.WithField(logfields.LogSyslog, "emerg").Error(msg)
+	s.l.Error(msg, logfields.LogSyslog, "emerg") //nolint:sloglint
 }
