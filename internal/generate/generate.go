@@ -25,12 +25,7 @@ import (
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
-	"github.com/cilium/certgen/internal/logging"
 	"github.com/cilium/certgen/internal/logging/logfields"
-)
-
-var (
-	log = logging.DefaultLogger.With(logfields.LogSubsys, "generate")
 )
 
 // Cert contains the data and metadata of the certificate and keyfile.
@@ -73,7 +68,7 @@ func (c *Cert) WithHosts(hosts []string) *Cert {
 }
 
 // Generate the certificate and keyfile and populate c.CertBytes and c.CertKey.
-func (c *Cert) Generate(ca *CA) error {
+func (c *Cert) Generate(log *slog.Logger, ca *CA) error {
 	log.Info("Creating CSR for certificate",
 		logfields.CertCommonName, c.CommonName,
 		logfields.CertValidityDuration, c.ValidityDuration.String(),
@@ -125,7 +120,7 @@ func (c *Cert) Generate(ca *CA) error {
 }
 
 // StoreAsSecret creates or updates the certificate and keyfile in a K8s secret.
-func (c *Cert) StoreAsSecret(ctx context.Context, k8sClient *kubernetes.Clientset) error {
+func (c *Cert) StoreAsSecret(ctx context.Context, log *slog.Logger, k8sClient *kubernetes.Clientset) error {
 	if c.CertBytes == nil || c.KeyBytes == nil {
 		return fmt.Errorf("cannot create secret %s/%s from empty certificate",
 			c.Namespace, c.Name)
@@ -218,7 +213,7 @@ func (c *CA) Reset() {
 
 // Generate the root certificate and keyfile. Populates c.CACertBytes and
 // c.CAKeyBytes.
-func (c *CA) Generate(commonName string, validityDuration time.Duration) error {
+func (c *CA) Generate(log *slog.Logger, commonName string, validityDuration time.Duration) error {
 	log.Info("Creating CSR for certificate authority",
 		logfields.CertCommonName, commonName,
 		logfields.CertValidityDuration, validityDuration.String(),
@@ -270,7 +265,7 @@ func (c *CA) LoadFromFile(caCertFile, caKeyFile string) error {
 //     (if available) will be overwritten.
 //   - If force is false and there is existing secret with same name in same
 //     namespace, just throws IsAlreadyExists error to caller.
-func (c *CA) StoreAsSecret(ctx context.Context, k8sClient *kubernetes.Clientset, force bool) error {
+func (c *CA) StoreAsSecret(ctx context.Context, log *slog.Logger, k8sClient *kubernetes.Clientset, force bool) error {
 	if c.CACertBytes == nil || c.CAKeyBytes == nil {
 		return fmt.Errorf("cannot create secret %s/%s from empty certificate",
 			c.SecretNamespace, c.SecretName)
