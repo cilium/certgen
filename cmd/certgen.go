@@ -135,7 +135,7 @@ func parseCertificateConfigs(cfg, cfgfile string) (certConfigs option.Certificat
 	return certConfigs, nil
 }
 
-// generateCertificates runs the main code to generate and store certificate
+// generateCertificates runs the main code to generate and store certificate.
 func generateCertificates() error {
 	k8sClient, err := k8sConfig(option.Config.K8sKubeConfigPath)
 	if err != nil {
@@ -152,7 +152,8 @@ func generateCertificates() error {
 
 	ca := generate.NewCA(option.Config.CASecretName, option.Config.CASecretNamespace)
 
-	if option.Config.CAGenerate {
+	switch {
+	case option.Config.CAGenerate:
 		err = ca.Generate(option.Config.CACommonName, option.Config.CAValidityDuration)
 		if err != nil {
 			return fmt.Errorf("failed to generate CA: %w", err)
@@ -170,7 +171,7 @@ func generateCertificates() error {
 		} else {
 			count++
 		}
-	} else if option.Config.CACertFile != "" && option.Config.CAKeyFile != "" {
+	case option.Config.CACertFile != "" && option.Config.CAKeyFile != "":
 		log.Info("Loading CA from file")
 		err = ca.LoadFromFile(option.Config.CACertFile, option.Config.CAKeyFile)
 		if err != nil {

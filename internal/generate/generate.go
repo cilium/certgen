@@ -47,7 +47,7 @@ type Cert struct {
 	KeyBytes  []byte
 }
 
-// NewCert creates a new certificate blueprint
+// NewCert creates a new certificate blueprint.
 func NewCert(
 	commonName string,
 	validityDuration time.Duration,
@@ -65,13 +65,14 @@ func NewCert(
 	}
 }
 
-// WithHosts modifies to use the given hosts instead of the default (CommonName)
+// WithHosts modifies to use the given hosts instead of the default
+// (CommonName).
 func (c *Cert) WithHosts(hosts []string) *Cert {
 	c.Hosts = hosts
 	return c
 }
 
-// Generate the certificate and keyfile and populate c.CertBytes and c.CertKey
+// Generate the certificate and keyfile and populate c.CertBytes and c.CertKey.
 func (c *Cert) Generate(ca *CA) error {
 	log.Info("Creating CSR for certificate",
 		logfields.CertCommonName, c.CommonName,
@@ -123,7 +124,7 @@ func (c *Cert) Generate(ca *CA) error {
 	return nil
 }
 
-// StoreAsSecret creates or updates the certificate and keyfile in a K8s secret
+// StoreAsSecret creates or updates the certificate and keyfile in a K8s secret.
 func (c *Cert) StoreAsSecret(ctx context.Context, k8sClient *kubernetes.Clientset) error {
 	if c.CertBytes == nil || c.KeyBytes == nil {
 		return fmt.Errorf("cannot create secret %s/%s from empty certificate",
@@ -158,7 +159,7 @@ func (c *Cert) StoreAsSecret(ctx context.Context, k8sClient *kubernetes.Clientse
 	return err
 }
 
-// CA contains the data and metadata of the certificate authority
+// CA contains the data and metadata of the certificate authority.
 type CA struct {
 	SecretName      string
 	SecretNamespace string
@@ -172,7 +173,7 @@ type CA struct {
 	loadedFromSecret bool
 }
 
-// NewCA creates a new root CA blueprint
+// NewCA creates a new root CA blueprint.
 func NewCA(secretName, secretNamespace string) *CA {
 	return &CA{
 		SecretName:      secretName,
@@ -180,7 +181,7 @@ func NewCA(secretName, secretNamespace string) *CA {
 	}
 }
 
-// loadKeyPair populates c.CACert/c.CAKey from c.CACertBytes/c.CAKeyBytes
+// loadKeyPair populates c.CACert/c.CAKey from c.CACertBytes/c.CAKeyBytes.
 func (c *CA) loadKeyPair() error {
 	caCert, err := helpers.ParseCertificatePEM(c.CACertBytes)
 	if err != nil {
@@ -197,24 +198,26 @@ func (c *CA) loadKeyPair() error {
 	return nil
 }
 
-// LoadedFromSecret returns true if this CA was loaded from a K8s secret
+// LoadedFromSecret returns true if this CA was loaded from a K8s secret.
 func (c *CA) LoadedFromSecret() bool {
 	return c.loadedFromSecret
 }
 
-// IsEmpty returns true if this CA is empty
+// IsEmpty returns true if this CA is empty.
 func (c *CA) IsEmpty() bool {
 	return c.CAKey == nil && c.CACert == nil
 }
 
-// Reset resets ca key and ca cert values, this is useful for reload or regeneration.
+// Reset resets ca key and ca cert values, this is useful for reload or
+// regeneration.
 func (c *CA) Reset() {
 	c.CAKey = nil
 	c.CACert = nil
 	c.loadedFromSecret = false
 }
 
-// Generate the root certificate and keyfile. Populates c.CACertBytes and c.CAKeyBytes
+// Generate the root certificate and keyfile. Populates c.CACertBytes and
+// c.CAKeyBytes.
 func (c *CA) Generate(commonName string, validityDuration time.Duration) error {
 	log.Info("Creating CSR for certificate authority",
 		logfields.CertCommonName, commonName,
@@ -239,7 +242,8 @@ func (c *CA) Generate(commonName string, validityDuration time.Duration) error {
 	return c.loadKeyPair()
 }
 
-// LoadFromFile populates c.CACertBytes and c.CAKeyBytes by reading them from file.
+// LoadFromFile populates c.CACertBytes and c.CAKeyBytes by reading them from
+// file.
 func (c *CA) LoadFromFile(caCertFile, caKeyFile string) error {
 	if caCertFile == "" || caKeyFile == "" {
 		return errors.New("path for CA key and cert file must both be provided if CA is not generated")
@@ -261,10 +265,11 @@ func (c *CA) LoadFromFile(caCertFile, caKeyFile string) error {
 	return c.loadKeyPair()
 }
 
-// StoreAsSecret creates or updates the CA certificate in a K8s secret
-//   - If force is true, the existing secret with same name in same namespace (if available) will be overwritten.
-//   - If force is false and there is existing secret with same name in same namespace, just
-//     throws IsAlreadyExists error to caller
+// StoreAsSecret creates or updates the CA certificate in a K8s secret.
+//   - If force is true, the existing secret with same name in same namespace
+//     (if available) will be overwritten.
+//   - If force is false and there is existing secret with same name in same
+//     namespace, just throws IsAlreadyExists error to caller.
 func (c *CA) StoreAsSecret(ctx context.Context, k8sClient *kubernetes.Clientset, force bool) error {
 	if c.CACertBytes == nil || c.CAKeyBytes == nil {
 		return fmt.Errorf("cannot create secret %s/%s from empty certificate",
@@ -302,7 +307,8 @@ func (c *CA) StoreAsSecret(ctx context.Context, k8sClient *kubernetes.Clientset,
 	return err
 }
 
-// LoadFromSecret populates c.CACertBytes and c.CAKeyBytes by reading them from a secret
+// LoadFromSecret populates c.CACertBytes and c.CAKeyBytes by reading them from
+// a secret.
 func (c *CA) LoadFromSecret(ctx context.Context, k8sClient *kubernetes.Clientset) error {
 	k8sSecrets := k8sClient.CoreV1().Secrets(c.SecretNamespace)
 	secret, err := k8sSecrets.Get(ctx, c.SecretName, meta_v1.GetOptions{})

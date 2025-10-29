@@ -13,7 +13,7 @@ const (
 	// CertCommonName is the field denoting a x509 certificate's CN.
 	CertCommonName = "certCommonName"
 	// CertValidityDuration is the field denoting a x509 certificate's validity
-	// durationg
+	// duration.
 	CertValidityDuration = "certValidityDuration"
 	// CertUsage is the field denoting a x509 certificate's key usages.
 	CertUsage = "certUsage"
