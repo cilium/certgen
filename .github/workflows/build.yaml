@@ -31,6 +31,10 @@ jobs:
           # use our .golangci.yml
           args: --config=.golangci.yml --verbose
           skip-cache: true
+      - name: Run the slowg linter
+        run: |
+          go install github.com/cilium/linters@latest
+          linters -slowg ./...
       - name: govulncheck
         uses: golang/govulncheck-action@b625fbe08f3bccbe446d94fbf87fcc875a4f50ee
         with:
