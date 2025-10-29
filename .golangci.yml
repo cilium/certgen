@@ -59,7 +59,7 @@ linters:
     - protogetter
     - reassign
     - revive
-    #- sloglint
+    - sloglint
     - staticcheck
     - tagalign
     - testifylint

@@ -29,10 +29,9 @@ import (
 
 const binaryName = "cilium-certgen"
 
-var log = logging.DefaultLogger.With(slog.String(logfields.LogSubsys, binaryName))
-
 // New creates and returns a certgen command.
 func New() (*cobra.Command, error) {
+	log := logging.Logger.With(slog.String(logfields.LogSubsys, binaryName))
 	vp := viper.New()
 	rootCmd := &cobra.Command{
 		Use:           binaryName + " [flags]",
@@ -51,7 +50,7 @@ func New() (*cobra.Command, error) {
 				"version", version.Version,
 			)
 
-			if err := generateCertificates(); err != nil {
+			if err := generateCertificates(log); err != nil {
 				log.Error("failed to generate certificates", "error", err)
 			}
 		},
@@ -136,7 +135,7 @@ func parseCertificateConfigs(cfg, cfgfile string) (certConfigs option.Certificat
 }
 
 // generateCertificates runs the main code to generate and store certificate.
-func generateCertificates() error {
+func generateCertificates(log *slog.Logger) error {
 	k8sClient, err := k8sConfig(option.Config.K8sKubeConfigPath)
 	if err != nil {
 		return fmt.Errorf("failed initialize kubernetes client: %w", err)
@@ -154,14 +153,14 @@ func generateCertificates() error {
 
 	switch {
 	case option.Config.CAGenerate:
-		err = ca.Generate(option.Config.CACommonName, option.Config.CAValidityDuration)
+		err = ca.Generate(log, option.Config.CACommonName, option.Config.CAValidityDuration)
 		if err != nil {
 			return fmt.Errorf("failed to generate CA: %w", err)
 		}
 		ctx, cancel := context.WithTimeout(context.Background(), option.Config.K8sRequestTimeout)
 		defer cancel()
 
-		err = ca.StoreAsSecret(ctx, k8sClient, !option.Config.CAReuseSecret)
+		err = ca.StoreAsSecret(ctx, log, k8sClient, !option.Config.CAReuseSecret)
 		if err != nil {
 			if !k8sErrors.IsAlreadyExists(err) || !option.Config.CAReuseSecret {
 				return fmt.Errorf("failed to create secret for CA: %w", err)
@@ -205,7 +204,7 @@ func generateCertificates() error {
 			cfg.Namespace,
 		).WithHosts(cfg.Hosts)
 
-		err := certs[i].Generate(ca)
+		err := certs[i].Generate(log, ca)
 		if err != nil {
 			return fmt.Errorf("failed to generate cert: %w", err)
 		}
@@ -220,7 +219,7 @@ func generateCertificates() error {
 
 		ctx, cancel := context.WithTimeout(context.Background(), option.Config.K8sRequestTimeout)
 		defer cancel()
-		if err := cert.StoreAsSecret(ctx, k8sClient); err != nil {
+		if err := cert.StoreAsSecret(ctx, log, k8sClient); err != nil {
 			return fmt.Errorf("failed to create secret: %w", err)
 		}
 

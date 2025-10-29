@@ -12,12 +12,11 @@ import (
 	cfsslLog "github.com/cloudflare/cfssl/log"
 )
 
-// Level is a runtime-configurable log level used by DefaultLogger.
+// Level is a runtime-configurable log level used by Logger.
 var Level = new(slog.LevelVar)
 
-// DefaultLogger is the log/slog logger instance used through the certgen
-// packages.
-var DefaultLogger = slog.New(
+// Logger is the log/slog logger instance used through the certgen packages.
+var Logger = slog.New(
 	slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{
 		Level: Level,
 	}),
@@ -25,7 +24,7 @@ var DefaultLogger = slog.New(
 
 func init() {
 	cfsslLog.SetLogger(&sysLogger{
-		l: DefaultLogger.With(logfields.LogSubsys, "cfssl"),
+		l: Logger.With(logfields.LogSubsys, "cfssl"), //nolint:sloglint
 	})
 }
 
