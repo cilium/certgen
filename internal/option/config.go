@@ -57,7 +57,7 @@ const (
 	CertsConfigFile = "config-file"
 )
 
-// CertGenConfig contains the main configuration options
+// CertGenConfig contains the main configuration options.
 type CertGenConfig struct {
 	// Debug enables debug messages.
 	Debug bool
@@ -101,10 +101,12 @@ type CertGenConfig struct {
 	CertsConfigFile string
 }
 
+// CertificateConfigs contains configuration of individual certificates.
 type CertificateConfigs struct {
 	Certs []CertificateConfig `yaml:"certs"`
 }
 
+// CertificateConfig contains the configuration of a certificate.
 type CertificateConfig struct {
 	Name       string        `yaml:"name"`
 	Namespace  string        `yaml:"namespace"`
@@ -114,7 +116,7 @@ type CertificateConfig struct {
 	Validity   time.Duration `yaml:"validity"`
 }
 
-// PopulateFrom populates the config struct with the values provided by vp
+// PopulateFrom populates the config struct with the values provided by vp.
 func (c *CertGenConfig) PopulateFrom(vp *viper.Viper) {
 	c.Debug = vp.GetBool(Debug)
 	c.K8sKubeConfigPath = vp.GetString(K8sKubeConfigPath)
