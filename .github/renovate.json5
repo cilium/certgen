@@ -37,4 +37,42 @@
       'security',
     ],
   },
+
+  packageRules: [
+    {
+      groupName: 'all Dockerfile dependencies',
+      groupSlug: 'all-dockerfile-deps',
+      matchFileNames: [
+        'Dockerfile',
+      ],
+    },
+    {
+      groupName: 'all github action dependencies',
+      groupSlug: 'all-github-action',
+      matchFileNames: [
+        '.github/workflows/**',
+      ],
+    },
+    {
+      groupName: 'all Go dependencies',
+      groupSlug: 'all-go-deps',
+      matchFileNames: [
+        'go.mod',
+        'go.sum',
+      ],
+      postUpdateOptions: [
+        'gomodUpdateImportPaths'
+      ],
+    },
+    {
+      groupName: 'all Go version updates',
+      groupSlug: 'all-go-updates',
+      matchDepNames: [
+        'docker.io/library/golang',
+        'library/golang',
+        'go',
+        'golang',
+      ],
+    },
+  ],
 }
