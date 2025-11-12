@@ -37,7 +37,7 @@ jobs:
         with:
           version: v2.5.0
           # use our .golangci.yml
-          args: --config=.golangci.yml --verbose
+          args: "--verbose --modules-download-mode=vendor"
           skip-cache: true
 
       - name: Run the slowg linter
