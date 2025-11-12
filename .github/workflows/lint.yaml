@@ -31,6 +31,7 @@ jobs:
       - name: Run static checks
         uses: golangci/golangci-lint-action@0a35821d5c230e903fcfe077583637dea1b27b47
         with:
+          # renovate: datasource=github-releases depName=golangci/golangci-lint
           version: v2.5.0
           # use our .golangci.yml
           args: "--verbose --modules-download-mode=vendor"
