@@ -101,7 +101,7 @@ func (c *Cert) Generate(log *slog.Logger, ca *CA) error {
 			Expiry: c.ValidityDuration,
 		},
 	}
-	caCert, caSigner := ca.CACert, ca.CAKey
+	caCert, caSigner := ca.Leaf(), ca.CAKey
 	s, err := local.NewSigner(caSigner, caCert, signer.DefaultSigAlgo(caSigner), policy)
 	if err != nil {
 		return err
@@ -138,8 +138,8 @@ func (c *Cert) StoreAsSecret(ctx context.Context, log *slog.Logger, k8sClient *k
 			Namespace: c.Namespace,
 		},
 		Data: map[string][]byte{
-			"ca.crt":  helpers.EncodeCertificatePEM(c.CA.CACert),
-			"tls.crt": c.CertBytes,
+			"ca.crt":  helpers.EncodeCertificatePEM(c.CA.Root()),
+			"tls.crt": append(c.CertBytes, helpers.EncodeCertificatesPEM(c.CA.Intermediates())...),
 			"tls.key": c.KeyBytes,
 		},
 		Type: v1.SecretTypeTLS,
@@ -161,8 +161,8 @@ type CA struct {
 
 	CAKeyBytes []byte
 
-	CACert *x509.Certificate
-	CAKey  crypto.Signer
+	CACerts []*x509.Certificate
+	CAKey   crypto.Signer
 }
 
 // NewCA creates a new root CA blueprint.
@@ -175,9 +175,13 @@ func NewCA(secretName, secretNamespace string) *CA {
 
 // loadKeyPair populates c.CACert/c.CAKey from c.CACertBytes/c.CAKeyBytes.
 func (c *CA) loadKeyPair(caCertBytes []byte) error {
-	caCert, err := helpers.ParseCertificatePEM(caCertBytes)
+	// Parse all certificates (if multiple are present) to support the case in
+	// which [CA.CACertBytes] contains a chain of certificates. The first
+	// certificate is assumed to be the intermediate CA to be used to sign the
+	// newly generated certificates.
+	caCerts, err := helpers.ParseCertificatesPEM(caCertBytes)
 	if err != nil {
-		return fmt.Errorf("failed to parse CA cert PEM: %w", err)
+		return fmt.Errorf("failed to parse CA certificates: %w", err)
 	}
 
 	caKey, err := helpers.ParsePrivateKeyPEM(c.CAKeyBytes)
@@ -185,21 +189,47 @@ func (c *CA) loadKeyPair(caCertBytes []byte) error {
 		return fmt.Errorf("failed to parse CA key PEM: %w", err)
 	}
 
-	c.CACert = caCert
+	c.CACerts = caCerts
 	c.CAKey = caKey
 	return nil
 }
 
 // IsEmpty returns true if this CA is empty.
 func (c *CA) IsEmpty() bool {
-	return c.CAKey == nil && c.CACert == nil
+	return c.CAKey == nil && len(c.CACerts) == 0
+}
+
+// Root returns the certificate of the root CA.
+func (c *CA) Root() *x509.Certificate {
+	var count = len(c.CACerts)
+	if count == 0 {
+		return nil
+	}
+
+	return c.CACerts[count-1]
+}
+
+// Intermediates returns the intermediate CA certificates to be appended to the
+// newly generated certificates.
+func (c *CA) Intermediates() []*x509.Certificate {
+	return c.CACerts[:len(c.CACerts)-1]
+}
+
+// Leaf returns the leaf CA certificate, that is the one to be used to sign the
+// newly generated certificates.
+func (c *CA) Leaf() *x509.Certificate {
+	if len(c.CACerts) == 0 {
+		return nil
+	}
+
+	return c.CACerts[0]
 }
 
 // Reset resets ca key and ca cert values, this is useful for reload or
 // regeneration.
 func (c *CA) Reset() {
 	c.CAKey = nil
-	c.CACert = nil
+	c.CACerts = nil
 }
 
 // Generate the root certificate and keyfile. Populates c.CACertBytes and
@@ -253,7 +283,7 @@ func (c *CA) LoadFromFile(caCertFile, caKeyFile string) error {
 //   - If force is false and there is existing secret with same name in same
 //     namespace, just throws IsAlreadyExists error to caller.
 func (c *CA) StoreAsSecret(ctx context.Context, log *slog.Logger, k8sClient *kubernetes.Clientset, force bool) error {
-	if c.CACert == nil || c.CAKeyBytes == nil {
+	if len(c.CACerts) == 0 || c.CAKeyBytes == nil {
 		return fmt.Errorf("cannot create secret %s/%s from empty certificate",
 			c.SecretNamespace, c.SecretName)
 	}
@@ -270,7 +300,7 @@ func (c *CA) StoreAsSecret(ctx context.Context, log *slog.Logger, k8sClient *kub
 			Namespace: c.SecretNamespace,
 		},
 		Data: map[string][]byte{
-			"ca.crt": helpers.EncodeCertificatePEM(c.CACert),
+			"ca.crt": helpers.EncodeCertificatesPEM(c.CACerts),
 			"ca.key": c.CAKeyBytes,
 		},
 	}
