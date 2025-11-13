@@ -1,7 +1,8 @@
 # cilium-certgen
 
-A convenience tool to generate and store certificates for Hubble Relay mTLS.
-Please refer to the [Cilium] Helm chart on details for how to deploy it.
+A convenience tool to generate and store certificates for Cilium components,
+such as Cluster Mesh and Hubble. Please refer to the [Cilium] Helm chart on
+details for how to deploy it.
 
 # Contributing
 
