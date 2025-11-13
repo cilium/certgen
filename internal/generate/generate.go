@@ -138,7 +138,7 @@ func (c *Cert) StoreAsSecret(ctx context.Context, log *slog.Logger, k8sClient *k
 			Namespace: c.Namespace,
 		},
 		Data: map[string][]byte{
-			"ca.crt":  c.CA.CACertBytes,
+			"ca.crt":  helpers.EncodeCertificatePEM(c.CA.CACert),
 			"tls.crt": c.CertBytes,
 			"tls.key": c.KeyBytes,
 		},
@@ -159,8 +159,7 @@ type CA struct {
 	SecretName      string
 	SecretNamespace string
 
-	CACertBytes []byte
-	CAKeyBytes  []byte
+	CAKeyBytes []byte
 
 	CACert *x509.Certificate
 	CAKey  crypto.Signer
@@ -175,8 +174,8 @@ func NewCA(secretName, secretNamespace string) *CA {
 }
 
 // loadKeyPair populates c.CACert/c.CAKey from c.CACertBytes/c.CAKeyBytes.
-func (c *CA) loadKeyPair() error {
-	caCert, err := helpers.ParseCertificatePEM(c.CACertBytes)
+func (c *CA) loadKeyPair(caCertBytes []byte) error {
+	caCert, err := helpers.ParseCertificatePEM(caCertBytes)
 	if err != nil {
 		return fmt.Errorf("failed to parse CA cert PEM: %w", err)
 	}
@@ -223,9 +222,8 @@ func (c *CA) Generate(log *slog.Logger, commonName string, validityDuration time
 		return err
 	}
 
-	c.CACertBytes = caCertBytes
 	c.CAKeyBytes = caKeyBytes
-	return c.loadKeyPair()
+	return c.loadKeyPair(caCertBytes)
 }
 
 // LoadFromFile populates c.CACertBytes and c.CAKeyBytes by reading them from
@@ -245,9 +243,8 @@ func (c *CA) LoadFromFile(caCertFile, caKeyFile string) error {
 		return fmt.Errorf("failed to load Hubble CA key file: %w", err)
 	}
 
-	c.CACertBytes = caCertBytes
 	c.CAKeyBytes = caKeyBytes
-	return c.loadKeyPair()
+	return c.loadKeyPair(caCertBytes)
 }
 
 // StoreAsSecret creates or updates the CA certificate in a K8s secret.
@@ -256,7 +253,7 @@ func (c *CA) LoadFromFile(caCertFile, caKeyFile string) error {
 //   - If force is false and there is existing secret with same name in same
 //     namespace, just throws IsAlreadyExists error to caller.
 func (c *CA) StoreAsSecret(ctx context.Context, log *slog.Logger, k8sClient *kubernetes.Clientset, force bool) error {
-	if c.CACertBytes == nil || c.CAKeyBytes == nil {
+	if c.CACert == nil || c.CAKeyBytes == nil {
 		return fmt.Errorf("cannot create secret %s/%s from empty certificate",
 			c.SecretNamespace, c.SecretName)
 	}
@@ -273,7 +270,7 @@ func (c *CA) StoreAsSecret(ctx context.Context, log *slog.Logger, k8sClient *kub
 			Namespace: c.SecretNamespace,
 		},
 		Data: map[string][]byte{
-			"ca.crt": c.CACertBytes,
+			"ca.crt": helpers.EncodeCertificatePEM(c.CACert),
 			"ca.key": c.CAKeyBytes,
 		},
 	}
@@ -309,10 +306,9 @@ func (c *CA) LoadFromSecret(ctx context.Context, k8sClient *kubernetes.Clientset
 		return fmt.Errorf("secret %s/%s has no CA key", c.SecretNamespace, c.SecretName)
 	}
 
-	c.CACertBytes = secret.Data["ca.crt"]
 	c.CAKeyBytes = secret.Data["ca.key"]
 
-	if err := c.loadKeyPair(); err != nil {
+	if err := c.loadKeyPair(secret.Data["ca.crt"]); err != nil {
 		return err
 	}
 
