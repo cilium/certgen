@@ -1,4 +1,4 @@
-name: Go build
+name: Lint Go files
 on:
   pull_request: {}
   push:
@@ -6,24 +6,30 @@ on:
       - main
 
 jobs:
-  build:
+  lint:
+    name: Lint
     runs-on: ubuntu-24.04
+
     steps:
       - name: Checkout code
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
+
       - name: Install Go
         uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00
         with:
           go-version-file: 'go.mod'
+
       - name: Formatting check
         run: |
           go fmt ./...
           git diff --exit-code
+
       - name: Go mod check
         run: |
           go mod tidy
           go mod vendor
           test -z "$(git status --porcelain)" || (echo "please run 'go mod tidy && go mod vendor', and submit your changes"; exit 1)
+
       - name: Run static checks
         uses: golangci/golangci-lint-action@0a35821d5c230e903fcfe077583637dea1b27b47
         with:
@@ -31,15 +37,14 @@ jobs:
           # use our .golangci.yml
           args: --config=.golangci.yml --verbose
           skip-cache: true
+
       - name: Run the slowg linter
         run: |
           go install github.com/cilium/linters@latest
           linters -slowg ./...
+
       - name: govulncheck
         uses: golang/govulncheck-action@b625fbe08f3bccbe446d94fbf87fcc875a4f50ee
         with:
           go-version-file: 'go.mod'
           go-package: './...'
-      - name: Build
-        run: |
-          go build ./...
