@@ -26,11 +26,11 @@ jobs:
 
       - name: Run unit tests
         run: |
-          go test ./...
+          make test
 
       - name: Build the certgen binary
         run: |
-          go build -o certgen .
+          make certgen
 
       - name: Create the configuration file
         run: |

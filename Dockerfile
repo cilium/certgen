@@ -9,9 +9,10 @@ ARG BASE_IMAGE=scratch
 FROM ${GOLANG_IMAGE} AS builder
 ADD . /go/src/github.com/cilium/certgen
 WORKDIR /go/src/github.com/cilium/certgen
-RUN CGO_ENABLED=0 go build -o cilium-certgen main.go
+RUN apk add --no-cache binutils make
+RUN make certgen
 
 FROM ${BASE_IMAGE}
 LABEL maintainer="maintainer@cilium.io"
-COPY --from=builder /go/src/github.com/cilium/certgen/cilium-certgen /usr/bin/cilium-certgen
+COPY --from=builder /go/src/github.com/cilium/certgen/certgen /usr/bin/cilium-certgen
 ENTRYPOINT ["/usr/bin/cilium-certgen"]
