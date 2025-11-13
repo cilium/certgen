@@ -74,5 +74,13 @@
         'golang',
       ],
     },
+    {
+      // Enable updates of the go directive in go.mod, but keep patch version 0.
+      matchManagers: ['gomod'],
+      matchDepNames: ['go'],
+      matchDepTypes: ['golang'],
+      rangeStrategy: 'bump',
+      allowedVersions: '/^[0-9]+\\.[0-9]+\\.0$/'
+    },
   ],
 }
