@@ -93,7 +93,8 @@ jobs:
             local crt="$1"
             local ca="$2"
 
-            openssl verify -CAfile ${ca} ${crt}
+            shift 2
+            openssl verify -CAfile ${ca} "$@" ${crt}
 
             assert_equal "$(openssl x509 -subject -noout -in ${crt})" "subject=CN = foo.cilium.io"
             assert_equal "$(openssl x509 -ext subjectAltName -noout -in ${crt} | tail -n 1 | sed 's/^ *//')" "DNS:foo.cilium.io, DNS:qux.cilium.io, IP Address:192.0.2.237"
@@ -110,7 +111,8 @@ jobs:
             local crt="$1"
             local ca="$2"
 
-            openssl verify -CAfile ${ca} ${crt}
+            shift 2
+            openssl verify -CAfile ${ca} "$@" ${crt}
 
             assert_equal "$(openssl x509 -subject -noout -in ${crt})" "subject=CN = bar.cilium.io"
             assert_equal "$(openssl x509 -ext subjectAltName -noout -in ${crt})" ""
@@ -201,3 +203,38 @@ jobs:
           assert_not_equal "$(openssl x509 -serial -noout -in bar.crt)" "$(openssl x509 -serial -noout -in bar.new.crt)"
           assert_bar_cert bar.new.crt ca.crt
           assert_equal "$(cat bar.ca.crt)" "$(cat ca.crt)"
+
+          echo
+          echo "Creating a chain of CA certificates"
+          openssl req -new -newkey ec -pkeyopt ec_paramgen_curve:prime256v1 -x509 -nodes -days 1 \
+              -out root-ca.crt -keyout root-ca.key --subj '/CN=Root CA'
+          openssl req -new -newkey ec -pkeyopt ec_paramgen_curve:prime256v1 -x509 -nodes -days 1 \
+              -out int-ca.crt -keyout int-ca.key --CA root-ca.crt --CAkey root-ca.key --subj '/CN=Intermediate CA'
+          openssl req -new -newkey ec -pkeyopt ec_paramgen_curve:prime256v1 -x509 -nodes -days 1 \
+              -out leaf-ca.crt -keyout leaf-ca.key --CA int-ca.crt --CAkey int-ca.key --subj '/CN=Leaf CA'
+
+          cat leaf-ca.crt int-ca.crt root-ca.crt > chained.crt
+          kubectl create secret -n weasel generic chained-ca --from-file ca.key=leaf-ca.key --from-file ca.crt=chained.crt
+
+          echo
+          echo "Regenerating certificates"
+          ./certgen \
+              --k8s-kubeconfig-path=${HOME}/.kube/config \
+              --ca-reuse-secret \
+              --ca-secret-namespace=weasel \
+              --ca-secret-name=chained-ca \
+              --config-file=config.yaml
+
+          echo
+          echo "Retrieving and verifying 'foo' certificate"
+          kubectl get secret -n ladybird foo --template='{{ index .data "tls.crt" }}' | base64 -d > foo.crt
+          kubectl get secret -n ladybird foo --template='{{ index .data "ca.crt" }}' | base64 -d > foo.ca.crt
+
+          csplit --quiet --elide-empty-files --prefix=foo.crt foo.crt '/END CERTIFICATE/+1' '{*}'
+          openssl x509 -text -noout -in foo.crt00
+          cat foo.crt01 foo.crt02 > foo.int.crt
+
+          assert_foo_cert foo.crt00 root-ca.crt -untrusted foo.int.crt
+          assert_equal "$(cat foo.crt01)" "$(cat leaf-ca.crt)"
+          assert_equal "$(cat foo.crt02)" "$(cat int-ca.crt)"
+          assert_equal "$(cat foo.ca.crt)" "$(cat root-ca.crt)"
