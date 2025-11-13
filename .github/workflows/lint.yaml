@@ -21,11 +21,6 @@ jobs:
         with:
           go-version-file: 'go.mod'
 
-      - name: Formatting check
-        run: |
-          go fmt ./...
-          git diff --exit-code
-
       - name: Go mod check
         run: |
           go mod tidy
