@@ -52,6 +52,7 @@ func New() (*cobra.Command, error) {
 
 			if err := generateCertificates(log); err != nil {
 				log.Error("failed to generate certificates", "error", err)
+				os.Exit(1)
 			}
 		},
 	}
