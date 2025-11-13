@@ -22,6 +22,10 @@ jobs:
         with:
           go-version-file: 'go.mod'
 
+      - name: Run unit tests
+        run: |
+          go test ./...
+
       - name: Build the certgen binary
         run: |
           go build -o certgen .
