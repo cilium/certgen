@@ -164,8 +164,6 @@ type CA struct {
 
 	CACert *x509.Certificate
 	CAKey  crypto.Signer
-
-	loadedFromSecret bool
 }
 
 // NewCA creates a new root CA blueprint.
@@ -193,11 +191,6 @@ func (c *CA) loadKeyPair() error {
 	return nil
 }
 
-// LoadedFromSecret returns true if this CA was loaded from a K8s secret.
-func (c *CA) LoadedFromSecret() bool {
-	return c.loadedFromSecret
-}
-
 // IsEmpty returns true if this CA is empty.
 func (c *CA) IsEmpty() bool {
 	return c.CAKey == nil && c.CACert == nil
@@ -208,7 +201,6 @@ func (c *CA) IsEmpty() bool {
 func (c *CA) Reset() {
 	c.CAKey = nil
 	c.CACert = nil
-	c.loadedFromSecret = false
 }
 
 // Generate the root certificate and keyfile. Populates c.CACertBytes and
@@ -233,7 +225,6 @@ func (c *CA) Generate(log *slog.Logger, commonName string, validityDuration time
 
 	c.CACertBytes = caCertBytes
 	c.CAKeyBytes = caKeyBytes
-	c.loadedFromSecret = false
 	return c.loadKeyPair()
 }
 
@@ -256,7 +247,6 @@ func (c *CA) LoadFromFile(caCertFile, caKeyFile string) error {
 
 	c.CACertBytes = caCertBytes
 	c.CAKeyBytes = caKeyBytes
-	c.loadedFromSecret = false
 	return c.loadKeyPair()
 }
 
@@ -326,6 +316,5 @@ func (c *CA) LoadFromSecret(ctx context.Context, k8sClient *kubernetes.Clientset
 		return err
 	}
 
-	c.loadedFromSecret = true
 	return nil
 }
