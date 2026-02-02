@@ -2,7 +2,7 @@
 #
 # use skopeo inspect to get the multiarch manifest list digest
 # skopeo inspect --override-os linux docker://<GOLANG_IMAGE> | jq -r '.Digest'
-ARG GOLANG_IMAGE=docker.io/library/golang:1.25.6-alpine3.22@sha256:d9c983d2ac66c3f43208dfb6b092dd1296baa058766e3aa88a1b233adeb416c1
+ARG GOLANG_IMAGE=docker.io/library/golang:1.25.6-alpine3.22@sha256:fa3380ab0d73b706e6b07d2a306a4dc68f20bfc1437a6a6c47c8f88fe4af6f75
 
 ARG BASE_IMAGE=scratch
 
