@@ -238,3 +238,30 @@ jobs:
           assert_equal "$(cat foo.crt01)" "$(cat leaf-ca.crt)"
           assert_equal "$(cat foo.crt02)" "$(cat int-ca.crt)"
           assert_equal "$(cat foo.ca.crt)" "$(cat root-ca.crt)"
+
+          echo
+          echo "Generating a short-lived CA"
+          ./certgen \
+              --k8s-kubeconfig-path=${HOME}/.kube/config \
+              --ca-generate \
+              --ca-secret-namespace=weasel \
+              --ca-secret-name=expired-ca \
+              --ca-common-name="Expired CA" \
+              --ca-validity-duration=1s
+
+          sleep 5
+
+          echo
+          echo "Verifying CA certificate has expired"
+          kubectl get secret -n weasel expired-ca --template='{{ index .data "ca.crt" }}' | base64 -d > expired-ca.crt
+          openssl x509 -checkend 0 -noout -in expired-ca.crt && exit 1
+
+          echo
+          echo "Verifying certgen fails with expired CA"
+          ./certgen \
+              --k8s-kubeconfig-path=${HOME}/.kube/config \
+              --ca-generate --ca-reuse-secret \
+              --ca-secret-namespace=weasel \
+              --ca-secret-name=expired-ca \
+              --ca-validity-duration=24h \
+              --config-file=config.yaml 2>&1 && exit 1

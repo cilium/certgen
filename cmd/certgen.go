@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/cilium/certgen/internal/defaults"
 	"github.com/cilium/certgen/internal/generate"
@@ -187,6 +188,22 @@ func generateCertificates(log *slog.Logger) error {
 			return fmt.Errorf("failed to load CA from secret: %w", err)
 		}
 		log.Info("Loaded CA Secret")
+	}
+
+	if leaf := ca.Leaf(); leaf != nil && len(certConfigs.Certs) > 0 {
+		var maxLeafDuration time.Duration
+		for _, cfg := range certConfigs.Certs {
+			if cfg.Validity > maxLeafDuration {
+				maxLeafDuration = cfg.Validity
+			}
+		}
+
+		if time.Now().Add(maxLeafDuration).After(leaf.NotAfter) {
+			return fmt.Errorf(
+				"CA certificate expires at %s, before the requested certificate validity of %s",
+				leaf.NotAfter.UTC().Format(time.RFC3339), maxLeafDuration,
+			)
+		}
 	}
 
 	log.Info("Generating certificates")

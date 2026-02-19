@@ -342,5 +342,10 @@ func (c *CA) LoadFromSecret(ctx context.Context, k8sClient *kubernetes.Clientset
 		return err
 	}
 
+	if leaf := c.Leaf(); leaf != nil && time.Now().After(leaf.NotAfter) {
+		return fmt.Errorf("CA certificate in secret %s/%s has expired (notAfter=%s)",
+			c.SecretNamespace, c.SecretName, leaf.NotAfter.UTC().Format(time.RFC3339))
+	}
+
 	return nil
 }
