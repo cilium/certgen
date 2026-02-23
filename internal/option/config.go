@@ -47,6 +47,12 @@ const (
 	// CASecretNamespace is the Kubernetes Namespace in which the CA
 	// Secret will be stored.
 	CASecretNamespace = "ca-secret-namespace"
+	// CAConfigMapName is the Kubernetes ConfigMap in which the CA certificate
+	// is written to.
+	CAConfigMapName = "ca-configmap-name"
+	// CAConfigMapNamespace is the Kubernetes Namespace in which the CA
+	// ConfigMap will be stored.
+	CAConfigMapNamespace = "ca-configmap-namespace"
 
 	// CertsConfig is the configuration describing the certificates to generate.
 	// It takes precedence over config-file if both are specified.
@@ -92,6 +98,12 @@ type CertGenConfig struct {
 	// CASecretNamespace is the Kubernetes Namespace in which the CA
 	// Secret will be stored.
 	CASecretNamespace string
+	// CAConfigMapName is the Kubernetes ConfigMap in which the CA certificate
+	// is written to.
+	CAConfigMapName string
+	// CAConfigMapNamespace is the Kubernetes Namespace in which the CA ConfigMap
+	// will be stored.
+	CAConfigMapNamespace string
 
 	// CertsConfig is the yaml configuration describing the certificates to
 	// generate. It takes precedence over config-file if both are specified.
@@ -131,6 +143,8 @@ func (c *CertGenConfig) PopulateFrom(vp *viper.Viper) {
 	c.CAValidityDuration = vp.GetDuration(CAValidityDuration)
 	c.CASecretName = vp.GetString(CASecretName)
 	c.CASecretNamespace = vp.GetString(CASecretNamespace)
+	c.CAConfigMapName = vp.GetString(CAConfigMapName)
+	c.CAConfigMapNamespace = vp.GetString(CAConfigMapNamespace)
 
 	c.CertsConfig = vp.GetString(CertsConfig)
 	c.CertsConfigFile = vp.GetString(CertsConfigFile)

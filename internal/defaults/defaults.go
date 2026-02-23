@@ -31,4 +31,10 @@ const (
 	// CASecretNamespace is the namespace in which the CA certificate is
 	// read from and/or written to.
 	CASecretNamespace = "kube-system"
+	// CAConfigMapName is the Kubernetes ConfigMap in which the CA certificate is
+	// or written to.
+	CAConfigMapName = ""
+	// CAConfigMapNamespace is the namespace in which the CA certificate is
+	// written to.
+	CAConfigMapNamespace = ""
 )

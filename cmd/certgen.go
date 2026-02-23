@@ -73,6 +73,8 @@ func New() (*cobra.Command, error) {
 	flags.Duration(option.CAValidityDuration, defaults.CAValidityDuration, "CA validity duration")
 	flags.String(option.CASecretName, defaults.CASecretName, "Name of the K8s Secret where the CA cert and key are stored in")
 	flags.String(option.CASecretNamespace, defaults.CASecretNamespace, "Namespace of the K8s Secret where the CA cert and key are stored in")
+	flags.String(option.CAConfigMapName, defaults.CAConfigMapName, "Name of the K8s ConfigMap where the CA cert are stored in")
+	flags.String(option.CAConfigMapNamespace, defaults.CAConfigMapNamespace, "Namespace of the K8s ConfigMap where the CA cert are stored in")
 
 	flags.String(option.CertsConfig, "", "YAML configuration of the certificates to generate, takes precedence over "+option.CertsConfigFile)
 	flags.String(option.CertsConfigFile, "", "Path to the file containing the YAML configuration of the certificates to generate")
@@ -150,7 +152,15 @@ func generateCertificates(log *slog.Logger) error {
 	// Store after all the requested certs have been successfully generated
 	count := 0
 
-	ca := generate.NewCA(option.Config.CASecretName, option.Config.CASecretNamespace)
+	ca, err := generate.NewCA(generate.CAConfig{
+		SecretName:         option.Config.CASecretName,
+		SecretNamespace:    option.Config.CASecretNamespace,
+		ConfigMapName:      option.Config.CAConfigMapName,
+		ConfigMapNamespace: option.Config.CAConfigMapNamespace,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to initialize CA: %w", err)
+	}
 
 	switch {
 	case option.Config.CAGenerate:
@@ -171,6 +181,7 @@ func generateCertificates(log *slog.Logger) error {
 		} else {
 			count++
 		}
+
 	case option.Config.CACertFile != "" && option.Config.CAKeyFile != "":
 		log.Info("Loading CA from file")
 		err = ca.LoadFromFile(option.Config.CACertFile, option.Config.CAKeyFile)
@@ -187,6 +198,18 @@ func generateCertificates(log *slog.Logger) error {
 			return fmt.Errorf("failed to load CA from secret: %w", err)
 		}
 		log.Info("Loaded CA Secret")
+	}
+
+	// Update the configmap even when reusing the secret to ensure the configmap
+	// is always up to date with the secret
+	if option.Config.CAConfigMapName != "" && option.Config.CAConfigMapNamespace != "" {
+		log.Info("Storing CA in ConfigMap")
+		ctx, cancel := context.WithTimeout(context.Background(), option.Config.K8sRequestTimeout)
+		defer cancel()
+		err = ca.StoreAsConfigMap(ctx, log, k8sClient)
+		if err != nil {
+			return fmt.Errorf("failed to create configmap for CA: %w", err)
+		}
 	}
 
 	log.Info("Generating certificates")
