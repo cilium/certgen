@@ -22,4 +22,10 @@ const (
 	K8sSecretName = "k8sSecretName"
 	// K8sSecretNamespace is the field denoting a Kubernetes secret's namespace.
 	K8sSecretNamespace = "k8sSecretNamespace"
+
+	// K8sConfigMapName is the field denoting a Kubernetes ConfigMap name.
+	K8sConfigMapName = "k8sConfigMapName"
+	// K8sConfigMapNamespace is the field denoting a Kubernetes ConfigMap's
+	// namespace.
+	K8sConfigMapNamespace = "k8sConfigMapNamespace"
 )

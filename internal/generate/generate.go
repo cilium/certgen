@@ -156,8 +156,7 @@ func (c *Cert) StoreAsSecret(ctx context.Context, log *slog.Logger, k8sClient *k
 
 // CA contains the data and metadata of the certificate authority.
 type CA struct {
-	SecretName      string
-	SecretNamespace string
+	CAConfig
 
 	CAKeyBytes []byte
 
@@ -165,12 +164,23 @@ type CA struct {
 	CAKey   crypto.Signer
 }
 
+// CAConfig contains the configuration for CA creation and storage.
+type CAConfig struct {
+	SecretName      string
+	SecretNamespace string
+
+	ConfigMapName      string
+	ConfigMapNamespace string
+}
+
 // NewCA creates a new root CA blueprint.
-func NewCA(secretName, secretNamespace string) *CA {
-	return &CA{
-		SecretName:      secretName,
-		SecretNamespace: secretNamespace,
+func NewCA(cfg CAConfig) (*CA, error) {
+	if cfg.SecretName == "" || cfg.SecretNamespace == "" {
+		return nil, errors.New("must specify secret name and namespace for CA")
 	}
+	return &CA{
+		CAConfig: cfg,
+	}, nil
 }
 
 // loadKeyPair populates c.CACert/c.CAKey from c.CACertBytes/c.CAKeyBytes.
@@ -317,6 +327,49 @@ func (c *CA) StoreAsSecret(ctx context.Context, log *slog.Logger, k8sClient *kub
 		}
 	}
 	return err
+}
+
+// StoreAsConfigMap creates or updates the CA certificate in a K8s ConfigMap.
+// Only the CA cert is stored in the ConfigMap, the CA key is not stored.
+func (c *CA) StoreAsConfigMap(ctx context.Context, log *slog.Logger, k8sClient *kubernetes.Clientset) error {
+	if len(c.CACerts) == 0 || c.CAKeyBytes == nil {
+		return fmt.Errorf("cannot create configmap %s/%s from empty certificate",
+			c.ConfigMapNamespace, c.ConfigMapName)
+	}
+
+	scopedLog := log.With(
+		slog.String(logfields.K8sConfigMapNamespace, c.ConfigMapNamespace),
+		slog.String(logfields.K8sConfigMapName, c.ConfigMapName),
+	)
+
+	k8sConfigMaps := k8sClient.CoreV1().ConfigMaps(c.ConfigMapNamespace)
+	cm, err := k8sConfigMaps.Get(ctx, c.ConfigMapName, meta_v1.GetOptions{})
+	if err != nil {
+		if k8sErrors.IsNotFound(err) {
+			cm := &v1.ConfigMap{
+				ObjectMeta: meta_v1.ObjectMeta{
+					Name:      c.ConfigMapName,
+					Namespace: c.ConfigMapNamespace,
+				},
+				Data: map[string]string{
+					"ca.crt": string(helpers.EncodeCertificatesPEM(c.CACerts)),
+				},
+			}
+			scopedLog.Info("ConfigMap does not exist, creating it")
+			_, err = k8sConfigMaps.Create(ctx, cm, meta_v1.CreateOptions{})
+		}
+		return err
+	}
+
+	scopedLog.Info("Updating K8s ConfigMap")
+	cm.Data["ca.crt"] = string(helpers.EncodeCertificatesPEM(c.CACerts))
+	_, err = k8sConfigMaps.Update(ctx, cm, meta_v1.UpdateOptions{})
+	if err != nil {
+		return err
+	}
+	scopedLog.Info("ConfigMap updated")
+
+	return nil
 }
 
 // LoadFromSecret populates c.CACertBytes and c.CAKeyBytes by reading them from
