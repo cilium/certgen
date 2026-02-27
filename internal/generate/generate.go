@@ -337,10 +337,28 @@ func (c *CA) LoadFromSecret(ctx context.Context, k8sClient *kubernetes.Clientset
 	}
 
 	c.CAKeyBytes = secret.Data["ca.key"]
+	return c.loadKeyPair(secret.Data["ca.crt"])
+}
 
-	if err := c.loadKeyPair(secret.Data["ca.crt"]); err != nil {
-		return err
+// ValidateExpiry checks that no certificate in the CA chain has already expired,
+// and that the CA will remain valid for the given leaf certificate validity durations.
+func (c *CA) ValidateExpiry(leafValidities []time.Duration) error {
+	now := time.Now()
+	for _, cert := range c.CACerts {
+		if now.After(cert.NotAfter) {
+			return fmt.Errorf("CA certificate %q has expired (notAfter=%s, now=%s)",
+				cert.Subject.CommonName,
+				cert.NotAfter.Format(time.RFC3339), now.Format(time.RFC3339))
+		}
+		for _, validity := range leafValidities {
+			if now.Add(validity).After(cert.NotAfter) {
+				return fmt.Errorf(
+					"CA certificate %q expires at %s, which is before the requested validity of %s (now=%s)",
+					cert.Subject.CommonName, cert.NotAfter.Format(time.RFC3339),
+					validity, now.Format(time.RFC3339),
+				)
+			}
+		}
 	}
-
 	return nil
 }
