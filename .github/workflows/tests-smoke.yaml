@@ -206,11 +206,11 @@ jobs:
 
           echo
           echo "Creating a chain of CA certificates"
-          openssl req -new -newkey ec -pkeyopt ec_paramgen_curve:prime256v1 -x509 -nodes -days 1 \
+          openssl req -new -newkey ec -pkeyopt ec_paramgen_curve:prime256v1 -x509 -nodes -days 2 \
               -out root-ca.crt -keyout root-ca.key --subj '/CN=Root CA'
-          openssl req -new -newkey ec -pkeyopt ec_paramgen_curve:prime256v1 -x509 -nodes -days 1 \
+          openssl req -new -newkey ec -pkeyopt ec_paramgen_curve:prime256v1 -x509 -nodes -days 2 \
               -out int-ca.crt -keyout int-ca.key --CA root-ca.crt --CAkey root-ca.key --subj '/CN=Intermediate CA'
-          openssl req -new -newkey ec -pkeyopt ec_paramgen_curve:prime256v1 -x509 -nodes -days 1 \
+          openssl req -new -newkey ec -pkeyopt ec_paramgen_curve:prime256v1 -x509 -nodes -days 2 \
               -out leaf-ca.crt -keyout leaf-ca.key --CA int-ca.crt --CAkey int-ca.key --subj '/CN=Leaf CA'
 
           cat leaf-ca.crt int-ca.crt root-ca.crt > chained.crt
@@ -238,3 +238,30 @@ jobs:
           assert_equal "$(cat foo.crt01)" "$(cat leaf-ca.crt)"
           assert_equal "$(cat foo.crt02)" "$(cat int-ca.crt)"
           assert_equal "$(cat foo.ca.crt)" "$(cat root-ca.crt)"
+
+          echo
+          echo "Generating a short-lived CA"
+          ./certgen \
+              --k8s-kubeconfig-path=${HOME}/.kube/config \
+              --ca-generate \
+              --ca-secret-namespace=weasel \
+              --ca-secret-name=expired-ca \
+              --ca-common-name="Expired CA" \
+              --ca-validity-duration=1s
+
+          sleep 5
+
+          echo
+          echo "Verifying CA certificate has expired"
+          kubectl get secret -n weasel expired-ca --template='{{ index .data "ca.crt" }}' | base64 -d > expired-ca.crt
+          if openssl x509 -checkend 0 -noout -in expired-ca.crt; then false; else true; fi
+
+          echo
+          echo "Verifying certgen fails with expired CA"
+          if ./certgen \
+              --k8s-kubeconfig-path=${HOME}/.kube/config \
+              --ca-generate --ca-reuse-secret \
+              --ca-secret-namespace=weasel \
+              --ca-secret-name=expired-ca \
+              --ca-validity-duration=24h \
+              --config-file=config.yaml 2>&1; then false; else true; fi
