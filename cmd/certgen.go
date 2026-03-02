@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/cilium/certgen/internal/defaults"
 	"github.com/cilium/certgen/internal/generate"
@@ -210,6 +211,16 @@ func generateCertificates(log *slog.Logger) error {
 		if err != nil {
 			return fmt.Errorf("failed to create configmap for CA: %w", err)
 		}
+	}
+
+	// Check that the CA certificate has not expired and will remain valid for
+	// the requested leaf certificate validity durations.
+	var leafValidities []time.Duration
+	for _, cfg := range certConfigs.Certs {
+		leafValidities = append(leafValidities, cfg.Validity)
+	}
+	if err := ca.ValidateExpiry(leafValidities); err != nil {
+		return err
 	}
 
 	log.Info("Generating certificates")
