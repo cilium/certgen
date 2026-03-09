@@ -20,7 +20,7 @@ jobs:
         uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
         with:
           # renovate: datasource=golang-version depName=go
-          go-version: 1.26.0
+          go-version: 1.26.1
 
       - name: Go mod check
         run: |
@@ -46,5 +46,5 @@ jobs:
         uses: golang/govulncheck-action@b625fbe08f3bccbe446d94fbf87fcc875a4f50ee # v1.0.4
         with:
           # renovate: datasource=golang-version depName=go
-          go-version-input: 1.26.0
+          go-version-input: 1.26.1
           go-package: './...'
