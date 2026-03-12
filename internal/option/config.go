@@ -53,6 +53,10 @@ const (
 	// CAConfigMapNamespace is the Kubernetes Namespace in which the CA
 	// ConfigMap will be stored.
 	CAConfigMapNamespace = "ca-configmap-namespace"
+	// CAEnforceValidityThroughoutLeavesDuration controls whether certgen strictly
+	// enforces that the CA certificates remain valid throughput the entire duration
+	// of the leaf certificates to be generated.
+	CAEnforceValidityThroughoutLeavesDuration = "ca-enforce-validity-throughout-leaves-duration"
 
 	// CertsConfig is the configuration describing the certificates to generate.
 	// It takes precedence over config-file if both are specified.
@@ -104,6 +108,10 @@ type CertGenConfig struct {
 	// CAConfigMapNamespace is the Kubernetes Namespace in which the CA ConfigMap
 	// will be stored.
 	CAConfigMapNamespace string
+	// CAEnforceValidityThroughoutLeavesDuration controls whether certgen strictly
+	// enforces that the CA certificates remain valid throughput the entire duration
+	// of the leaf certificates to be generated.
+	CAEnforceValidityThroughoutLeavesDuration bool
 
 	// CertsConfig is the yaml configuration describing the certificates to
 	// generate. It takes precedence over config-file if both are specified.
@@ -145,6 +153,7 @@ func (c *CertGenConfig) PopulateFrom(vp *viper.Viper) {
 	c.CASecretNamespace = vp.GetString(CASecretNamespace)
 	c.CAConfigMapName = vp.GetString(CAConfigMapName)
 	c.CAConfigMapNamespace = vp.GetString(CAConfigMapNamespace)
+	c.CAEnforceValidityThroughoutLeavesDuration = vp.GetBool(CAEnforceValidityThroughoutLeavesDuration)
 
 	c.CertsConfig = vp.GetString(CertsConfig)
 	c.CertsConfigFile = vp.GetString(CertsConfigFile)
