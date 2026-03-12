@@ -37,4 +37,8 @@ const (
 	// CAConfigMapNamespace is the namespace in which the CA certificate is
 	// written to.
 	CAConfigMapNamespace = ""
+	// CAEnforceValidityThroughoutLeavesDuration controls whether certgen strictly
+	// enforces that the CA certificates remain valid throughput the entire duration
+	// of the leaf certificates to be generated.
+	CAEnforceValidityThroughoutLeavesDuration = false
 )

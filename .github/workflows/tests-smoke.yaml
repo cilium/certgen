@@ -264,10 +264,20 @@ jobs:
               --ca-validity-duration=1h
 
           echo
-          echo "Verifying certgen fails when CA expires before leaf certificates"
+          echo "Verifying certgen does not fail when CA expires before leaf certificates, if the flag is disabled"
+          ./certgen \
+              --k8s-kubeconfig-path=${HOME}/.kube/config \
+              --ca-reuse-secret \
+              --ca-secret-namespace=weasel \
+              --ca-secret-name=short-lived-ca \
+              --config-file=config.yaml
+
+          echo
+          echo "Verifying certgen fails when CA expires before leaf certificates, if the flag is enabled"
           if ./certgen \
               --k8s-kubeconfig-path=${HOME}/.kube/config \
               --ca-reuse-secret \
               --ca-secret-namespace=weasel \
               --ca-secret-name=short-lived-ca \
+              --ca-enforce-validity-throughout-leaves-duration \
               --config-file=config.yaml 2>&1; then false; else true; fi

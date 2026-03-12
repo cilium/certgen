@@ -76,6 +76,9 @@ func New() (*cobra.Command, error) {
 	flags.String(option.CASecretNamespace, defaults.CASecretNamespace, "Namespace of the K8s Secret where the CA cert and key are stored in")
 	flags.String(option.CAConfigMapName, defaults.CAConfigMapName, "Name of the K8s ConfigMap where the CA cert are stored in")
 	flags.String(option.CAConfigMapNamespace, defaults.CAConfigMapNamespace, "Namespace of the K8s ConfigMap where the CA cert are stored in")
+	flags.Bool(option.CAEnforceValidityThroughoutLeavesDuration, defaults.CAEnforceValidityThroughoutLeavesDuration,
+		"Enforce that the CA certificates remain valid for the entire duration of the requested leaf certificates",
+	)
 
 	flags.String(option.CertsConfig, "", "YAML configuration of the certificates to generate, takes precedence over "+option.CertsConfigFile)
 	flags.String(option.CertsConfigFile, "", "Path to the file containing the YAML configuration of the certificates to generate")
@@ -213,11 +216,14 @@ func generateCertificates(log *slog.Logger) error {
 		}
 	}
 
-	// Check that the CA certificate has not expired and will remain valid for
-	// the requested leaf certificate validity durations.
+	// Check that the (a) CA certificate has not expired and (b) will remain
+	// valid for the requested leaf certificate validity durations (if the
+	// corresponding flag is enabled).
 	var leafValidities []time.Duration
-	for _, cfg := range certConfigs.Certs {
-		leafValidities = append(leafValidities, cfg.Validity)
+	if option.Config.CAEnforceValidityThroughoutLeavesDuration {
+		for _, cfg := range certConfigs.Certs {
+			leafValidities = append(leafValidities, cfg.Validity)
+		}
 	}
 	if err := ca.ValidateExpiry(leafValidities); err != nil {
 		return err
