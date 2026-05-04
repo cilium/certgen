@@ -28,6 +28,13 @@ import (
 	"github.com/cilium/certgen/internal/logging/logfields"
 )
 
+const (
+	// caCrtField is the name of the field of a secret storing the CA certificate.
+	caCrtField = "ca.crt"
+	// caKeyField is the name of the field of a secret storing the CA key.
+	caKeyField = "ca.key"
+)
+
 // Cert contains the data and metadata of the certificate and keyfile.
 type Cert struct {
 	CommonName       string
@@ -138,9 +145,9 @@ func (c *Cert) StoreAsSecret(ctx context.Context, log *slog.Logger, k8sClient *k
 			Namespace: c.Namespace,
 		},
 		Data: map[string][]byte{
-			"ca.crt":  helpers.EncodeCertificatePEM(c.CA.Root()),
-			"tls.crt": append(c.CertBytes, helpers.EncodeCertificatesPEM(c.CA.Intermediates())...),
-			"tls.key": c.KeyBytes,
+			caCrtField: helpers.EncodeCertificatePEM(c.CA.Root()),
+			"tls.crt":  append(c.CertBytes, helpers.EncodeCertificatesPEM(c.CA.Intermediates())...),
+			"tls.key":  c.KeyBytes,
 		},
 		Type: v1.SecretTypeTLS,
 	}
@@ -310,8 +317,8 @@ func (c *CA) StoreAsSecret(ctx context.Context, log *slog.Logger, k8sClient *kub
 			Namespace: c.SecretNamespace,
 		},
 		Data: map[string][]byte{
-			"ca.crt": helpers.EncodeCertificatesPEM(c.CACerts),
-			"ca.key": c.CAKeyBytes,
+			caCrtField: helpers.EncodeCertificatesPEM(c.CACerts),
+			caKeyField: c.CAKeyBytes,
 		},
 	}
 
@@ -352,7 +359,7 @@ func (c *CA) StoreAsConfigMap(ctx context.Context, log *slog.Logger, k8sClient *
 					Namespace: c.ConfigMapNamespace,
 				},
 				Data: map[string]string{
-					"ca.crt": string(helpers.EncodeCertificatesPEM(c.CACerts)),
+					caCrtField: string(helpers.EncodeCertificatesPEM(c.CACerts)),
 				},
 			}
 			scopedLog.Info("ConfigMap does not exist, creating it")
@@ -362,7 +369,7 @@ func (c *CA) StoreAsConfigMap(ctx context.Context, log *slog.Logger, k8sClient *
 	}
 
 	scopedLog.Info("Updating K8s ConfigMap")
-	cm.Data["ca.crt"] = string(helpers.EncodeCertificatesPEM(c.CACerts))
+	cm.Data[caCrtField] = string(helpers.EncodeCertificatesPEM(c.CACerts))
 	_, err = k8sConfigMaps.Update(ctx, cm, meta_v1.UpdateOptions{})
 	if err != nil {
 		return err
@@ -381,16 +388,16 @@ func (c *CA) LoadFromSecret(ctx context.Context, k8sClient *kubernetes.Clientset
 		return err
 	}
 
-	if len(secret.Data["ca.crt"]) == 0 {
+	if len(secret.Data[caCrtField]) == 0 {
 		return fmt.Errorf("secret %s/%s has no CA cert", c.SecretNamespace, c.SecretName)
 	}
 
-	if len(secret.Data["ca.key"]) == 0 {
+	if len(secret.Data[caKeyField]) == 0 {
 		return fmt.Errorf("secret %s/%s has no CA key", c.SecretNamespace, c.SecretName)
 	}
 
-	c.CAKeyBytes = secret.Data["ca.key"]
-	return c.loadKeyPair(secret.Data["ca.crt"])
+	c.CAKeyBytes = secret.Data[caKeyField]
+	return c.loadKeyPair(secret.Data[caCrtField])
 }
 
 // ValidateExpiry checks that no certificate in the CA chain has
