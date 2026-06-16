@@ -76,6 +76,10 @@ func (c *Cert) WithHosts(hosts []string) *Cert {
 
 // Generate the certificate and keyfile and populate c.CertBytes and c.CertKey.
 func (c *Cert) Generate(log *slog.Logger, ca *CA) error {
+	if ca == nil || ca.CAKey == nil || len(ca.CACerts) == 0 {
+		return errors.New("cannot generate certificate without a loaded or generated CA")
+	}
+
 	log.Info("Creating CSR for certificate",
 		logfields.CertCommonName, c.CommonName,
 		logfields.CertValidityDuration, c.ValidityDuration.String(),
