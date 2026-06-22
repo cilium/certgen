@@ -160,6 +160,11 @@ func (c *Cert) StoreAsSecret(ctx context.Context, log *slog.Logger, k8sClient *k
 	_, err := k8sSecrets.Create(ctx, secret, meta_v1.CreateOptions{})
 	if k8sErrors.IsAlreadyExists(err) {
 		scopedLog.Info("Secret already exists, updating it instead")
+		existingSecret, getErr := k8sSecrets.Get(ctx, c.Name, meta_v1.GetOptions{})
+		if getErr != nil {
+			return getErr
+		}
+		secret.ResourceVersion = existingSecret.ResourceVersion
 		_, err = k8sSecrets.Update(ctx, secret, meta_v1.UpdateOptions{})
 	}
 	return err
@@ -331,6 +336,11 @@ func (c *CA) StoreAsSecret(ctx context.Context, log *slog.Logger, k8sClient *kub
 	if k8sErrors.IsAlreadyExists(err) {
 		if force {
 			scopedLog.Info("Secret already exists, overwrite existing one instead")
+			existingSecret, getErr := k8sSecrets.Get(ctx, c.SecretName, meta_v1.GetOptions{})
+			if getErr != nil {
+				return getErr
+			}
+			secret.ResourceVersion = existingSecret.ResourceVersion
 			_, err = k8sSecrets.Update(ctx, secret, meta_v1.UpdateOptions{})
 		} else {
 			scopedLog.Warn("Secret already exists")

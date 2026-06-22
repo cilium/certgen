@@ -9,12 +9,17 @@ import (
 	"time"
 )
 
+const (
+	testNamespace = "default"
+	serverAuth    = "server auth"
+)
+
 // TestCertGenerateRequiresCA verifies generation fails without a usable CA.
 func TestCertGenerateRequiresCA(t *testing.T) {
 	t.Parallel()
 
 	logger := slog.New(slog.DiscardHandler)
-	cert := NewCert("test", time.Hour, []string{"server auth"}, "test", "default")
+	cert := NewCert("test", time.Hour, []string{serverAuth}, "test", testNamespace)
 
 	tests := []struct {
 		name string
@@ -55,7 +60,7 @@ func TestCertGenerateWithCA(t *testing.T) {
 
 	ca, err := NewCA(CAConfig{
 		SecretName:      "ca",
-		SecretNamespace: "default",
+		SecretNamespace: testNamespace,
 	})
 	if err != nil {
 		t.Fatalf("failed to create CA: %v", err)
@@ -65,7 +70,7 @@ func TestCertGenerateWithCA(t *testing.T) {
 		t.Fatalf("failed to generate CA: %v", err)
 	}
 
-	cert := NewCert("test", time.Hour, []string{"server auth"}, "test", "default")
+	cert := NewCert("test", time.Hour, []string{serverAuth}, "test", testNamespace)
 	if err := cert.Generate(logger, ca); err != nil {
 		t.Fatalf("failed to generate cert: %v", err)
 	}
