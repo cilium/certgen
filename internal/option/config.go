@@ -4,6 +4,7 @@
 package option
 
 import (
+	"errors"
 	"time"
 
 	"github.com/spf13/viper"
@@ -157,4 +158,17 @@ func (c *CertGenConfig) PopulateFrom(vp *viper.Viper) {
 
 	c.CertsConfig = vp.GetString(CertsConfig)
 	c.CertsConfigFile = vp.GetString(CertsConfigFile)
+}
+
+// Validate ensures the provided configuration does not contain incomplete
+// CA option pairs.
+func (c *CertGenConfig) Validate() error {
+	switch {
+	case (c.CACertFile == "") != (c.CAKeyFile == ""):
+		return errors.New("must specify both --ca-cert-file and --ca-key-file together")
+	case (c.CAConfigMapName == "") != (c.CAConfigMapNamespace == ""):
+		return errors.New("must specify both --ca-configmap-name and --ca-configmap-namespace together")
+	default:
+		return nil
+	}
 }

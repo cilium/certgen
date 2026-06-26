@@ -42,6 +42,10 @@ func New() (*cobra.Command, error) {
 		Version:       version.Version,
 		Run: func(cmd *cobra.Command, args []string) {
 			option.Config.PopulateFrom(vp)
+			if err := option.Config.Validate(); err != nil {
+				log.Error("invalid configuration", "error", err)
+				os.Exit(1)
+			}
 
 			if option.Config.Debug {
 				logging.Level.Set(slog.LevelDebug)
