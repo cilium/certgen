@@ -4,7 +4,11 @@
 package generate
 
 import (
+	"errors"
 	"log/slog"
+	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 )
@@ -76,5 +80,39 @@ func TestCertGenerateWithCA(t *testing.T) {
 
 	if len(cert.KeyBytes) == 0 {
 		t.Fatal("expected generated key bytes")
+	}
+}
+
+// TestCALoadFromFileErrors verifies CA file load errors
+// mention the correct path.
+func TestCALoadFromFileErrors(t *testing.T) {
+	t.Parallel()
+
+	ca, err := NewCA(CAConfig{
+		SecretName:      "ca",
+		SecretNamespace: "default",
+	})
+	if err != nil {
+		t.Fatalf("failed to create CA: %v", err)
+	}
+
+	certPath := filepath.Join(t.TempDir(), "ca.crt")
+	if err := os.WriteFile(certPath, []byte("dummy"), 0o600); err != nil {
+		t.Fatalf("failed to write cert file: %v", err)
+	}
+
+	keyPath := filepath.Join(t.TempDir(), "ca.key")
+	err = ca.LoadFromFile(certPath, keyPath)
+	if err == nil {
+		t.Fatal("expected error")
+	}
+
+	const want = "failed to load CA key file"
+	if !strings.Contains(err.Error(), want) {
+		t.Fatalf("unexpected error: got %q want substring %q", err.Error(), want)
+	}
+
+	if !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("expected not-exist error, got %v", err)
 	}
 }

@@ -291,7 +291,7 @@ func (c *CA) LoadFromFile(caCertFile, caKeyFile string) error {
 
 	caKeyBytes, err := os.ReadFile(caKeyFile)
 	if err != nil {
-		return fmt.Errorf("failed to load Hubble CA key file: %w", err)
+		return fmt.Errorf("failed to load CA key file: %w", err)
 	}
 
 	c.CAKeyBytes = caKeyBytes
