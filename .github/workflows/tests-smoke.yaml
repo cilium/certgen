@@ -176,7 +176,17 @@ jobs:
           assert_equal "$(cat bar.ca.crt)" "$(cat ca.crt)"
 
           echo
-          echo "Regenerating certificates"
+          echo "Replacing the CA ConfigMap with an empty placeholder"
+          kubectl apply -f - <<EOF
+          apiVersion: v1
+          kind: ConfigMap
+          metadata:
+            name: the-ca
+            namespace: weasel
+          EOF
+
+          echo
+          echo "Regenerating certificates with an existing empty ConfigMap"
           CILIUM_CERTGEN_CONFIG="$(cat config.yaml)" ./certgen \
               --k8s-kubeconfig-path=${HOME}/.kube/config \
               --ca-generate --ca-reuse-secret \
