@@ -373,6 +373,9 @@ func (c *CA) StoreAsConfigMap(ctx context.Context, log *slog.Logger, k8sClient *
 	}
 
 	scopedLog.Info("Updating K8s ConfigMap")
+	if cm.Data == nil {
+		cm.Data = map[string]string{}
+	}
 	cm.Data[caCrtField] = string(helpers.EncodeCertificatesPEM(c.CACerts))
 	_, err = k8sConfigMaps.Update(ctx, cm, meta_v1.UpdateOptions{})
 	if err != nil {
