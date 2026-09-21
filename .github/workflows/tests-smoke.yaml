@@ -8,7 +8,7 @@ on:
 
 jobs:
   test:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     name: Build and test
     steps:
       - name: Create the target kind cluster
@@ -96,7 +96,7 @@ jobs:
             shift 2
             openssl verify -CAfile ${ca} "$@" ${crt}
 
-            assert_equal "$(openssl x509 -subject -noout -in ${crt})" "subject=CN = foo.cilium.io"
+            assert_equal "$(openssl x509 -subject -noout -in ${crt})" "subject=CN=foo.cilium.io"
             assert_equal "$(openssl x509 -ext subjectAltName -noout -in ${crt} | tail -n 1 | sed 's/^ *//')" "DNS:foo.cilium.io, DNS:qux.cilium.io, IP Address:192.0.2.237"
             assert_equal "$(openssl x509 -ext keyUsage -noout -in ${crt} | tail -n 1 | sed 's/^ *//' )" "Digital Signature, Key Encipherment"
             assert_equal "$(openssl x509 -ext extendedKeyUsage -noout -in ${crt} | tail -n 1 | sed 's/^ *//' )" "TLS Web Server Authentication"
@@ -114,7 +114,7 @@ jobs:
             shift 2
             openssl verify -CAfile ${ca} "$@" ${crt}
 
-            assert_equal "$(openssl x509 -subject -noout -in ${crt})" "subject=CN = bar.cilium.io"
+            assert_equal "$(openssl x509 -subject -noout -in ${crt})" "subject=CN=bar.cilium.io"
             assert_equal "$(openssl x509 -ext subjectAltName -noout -in ${crt})" ""
             assert_equal "$(openssl x509 -ext keyUsage -noout -in ${crt} | tail -n 1 | sed 's/^ *//' )" "Digital Signature, Key Encipherment"
             assert_equal "$(openssl x509 -ext extendedKeyUsage -noout -in ${crt} | tail -n 1 | sed 's/^ *//' )" "TLS Web Client Authentication"
@@ -155,7 +155,7 @@ jobs:
           # Verify the CM and the secret contain the same certificate
           assert_equal "$(cat ca-cm.crt)" "$(cat ca.crt)"
 
-          assert_equal "$(openssl x509 -subject -noout -in ca.crt)" "subject=CN = The CA"
+          assert_equal "$(openssl x509 -subject -noout -in ca.crt)" "subject=CN=The CA"
           openssl x509 -checkend 172200 -noout -in ca.crt # 47h50m
           openssl x509 -checkend 173400 -noout -in ca.crt && exit 1 # 48h10m
 
