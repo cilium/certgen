@@ -91,15 +91,15 @@ linters:
         modules:
           - github.com/goccy/go-yaml:
               recommendations:
-                - go.yaml.in/yaml/v3
+                - go.yaml.in/yaml/v4
               reason: "Let's consolidate on a single YAML library that is also used by most of our dependencies"
           - gopkg.in/yaml.v2:
               recommendations:
-                - go.yaml.in/yaml/v3
+                - go.yaml.in/yaml/v4
               reason: "gopkg.in/yaml.v2 is unmaintained"
           - gopkg.in/yaml.v3:
               recommendations:
-                - go.yaml.in/yaml/v3
+                - go.yaml.in/yaml/v4
               reason: "gopkg.in/yaml.v3 is unmaintained"
           - go.uber.org/multierr:
               recommendations:
@@ -107,8 +107,12 @@ linters:
               reason: "Go 1.20+ has support for combining multiple errors, see https://go.dev/doc/go1.20#errors"
           - go.yaml.in/yaml/v2:
               recommendations:
-                - go.yaml.in/yaml/v3
-              reason: "We are using v3"
+                - go.yaml.in/yaml/v4
+              reason: "We are using v4"
+          - go.yaml.in/yaml/v3:
+              recommendations:
+                - go.yaml.in/yaml/v4
+              reason: "We are using v4"
     gosec:
       # available rules: https://github.com/securego/gosec#available-rules
       includes: [] # include all available rules
